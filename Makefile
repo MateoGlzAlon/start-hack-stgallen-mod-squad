@@ -11,7 +11,7 @@ s ?=
 DC = docker compose $(if $(wildcard frontend/Dockerfile),--profile ui)
 
 .DEFAULT_GOAL := help
-.PHONY: help env provision deprovision restart logs status clean
+.PHONY: help env build provision deprovision restart logs status clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n\n"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -20,22 +20,24 @@ help: ## Show this help
 env: ## Create .env from .env.example if missing
 	@test -f .env || (cp .env.example .env && echo "Created .env - add your keys")
 
+build: env ## Build the Docker images (backend, plus the UI once it exists) without starting them
+	$(DC) build
+
 provision: env ## Build and start the system (backend, plus the UI once it exists)
-	$(DC) up -d --build --wait
+	docker compose up -d --wait
 	@echo ""
 	@echo "  API  http://localhost:$(BACKEND_PORT)/status"
+	@echo "  Docs http://localhost:$(BACKEND_PORT)/swagger-ui.html"
 	@test ! -f frontend/Dockerfile || echo "  UI   http://localhost:$(FRONTEND_PORT)"
-	@grep -q '^TEAM_API_KEY=.' .env    || echo "  (!) TEAM_API_KEY is empty in .env: the Viseca worker stays off"
-	@grep -q '^OPENAI_API_KEY=.' .env  || echo "  (!) OPENAI_API_KEY is empty in .env: policies cannot be created"
 
 deprovision: ## Stop the system and delete its volumes (saved policies included)
-	$(DC) down -v
+	docker compose down -v
 
 restart: ## Rebuild and restart one service: make restart s=backend
-	$(DC) up -d --build --no-deps $(s)
+	docker compose up -d --build --no-deps $(s)
 
 logs: ## Tail logs (all, or one service: make logs s=backend)
-	$(DC) logs -f --tail=100 $(s)
+	docker compose logs -f --tail=100 $(s)
 
 status: ## Backend status: keys configured, worker running, counters
 	@curl -fsS http://localhost:$(BACKEND_PORT)/status && echo
