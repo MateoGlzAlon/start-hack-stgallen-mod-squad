@@ -1,0 +1,16 @@
+# secrets
+.env
+
+# backend
+backend/target/
+*.iml
+
+# frontend has its own .gitignore
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# backend runtime state (policies.json)
+backend/store/
