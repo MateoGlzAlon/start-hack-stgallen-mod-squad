@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Policy lifecycle: draft -> confirm -> tighten -> revoke. Local state is authoritative; Viseca sync is best effort. */
+/** Policy lifecycle: create (active at once) -> tighten -> revoke. Local state is authoritative; Viseca sync is best effort. */
 @Service
 public class PolicyService {
     private static final Logger log = LoggerFactory.getLogger(PolicyService.class);
@@ -33,7 +33,7 @@ public class PolicyService {
         this.viseca = viseca;
     }
 
-    public Policy createDraft(String instruction) {
+    public Policy create(String instruction) {
         if (instruction == null || instruction.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "instruction is required");
         if (instruction.length() > 2000) throw new ApiException(HttpStatus.BAD_REQUEST, "instruction is too long (max 2000 chars)");
         PolicyCompiler.Compiled c;
@@ -44,21 +44,14 @@ public class PolicyService {
         }
         Policy p = new Policy();
         p.id = "POL-" + UUID.randomUUID().toString().substring(0, 8);
-        p.status = "draft";
+        p.status = "active";
+        p.confirmedAt = Instant.now().toString();
         p.instruction = instruction;
         p.hardRules = c.hardRules();
         p.uncertaintyPolicy = c.uncertaintyPolicy();
         p.guidance = c.guidance();
         p.openQuestions = c.openQuestions();
         p.createdAt = Instant.now().toString();
-        return store.save(p);
-    }
-
-    public Policy confirm(String id) {
-        Policy p = require(id);
-        if (!"draft".equals(p.status)) throw new ApiException(HttpStatus.CONFLICT, "Policy is " + p.status + ", only a draft can be confirmed");
-        p.status = "active";
-        p.confirmedAt = Instant.now().toString();
         return store.save(p);
     }
 

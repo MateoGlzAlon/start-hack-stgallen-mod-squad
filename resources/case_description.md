@@ -19,8 +19,8 @@ System overview: Customer (card owner) sends a shopping request to the Al shoppi
 You build the wallet control, not the shopping agent. The prototype should work with the supplied synthetic data and simulator, respond within the required deadline, and remain predictable if optional models or external services fail. Do not hard-code decisions to scenario names, request IDs, or sequence positions.
 Demonstrate:
 1. One ordinary transaction completed with minimal friction.
-2.One ambiguous, unsafe, or manipulated transaction receiving a useful intervention.
-2. The human approval, rejection, or revocation path.
+2. One ambiguous, unsafe, or manipulated transaction receiving a useful intervention.
+3. The human approval, rejection, or revocation path.
 Judges should be able to understand what the system permitted, what evidence it considered, why it acted, and how the customer retained control.
 
 Technical Preferences: Viseca ultimately intends to integrate control-layer configuration into the existing Viseca one mobile app, while the decision (approve/ decline/ask) must meet strict latency requirements and runs in the backend. We therefore recommend decoupling the wallet-control user interface from the engine that approves, blocks, or escalates transactions, allowing each component to be integrated, deployed, and scaled independently. If language models are used in the decision path, smaller, lower-latency models are preferred.

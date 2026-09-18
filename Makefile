@@ -11,10 +11,10 @@ s ?=
 DC = docker compose $(if $(wildcard frontend/Dockerfile),--profile ui)
 
 .DEFAULT_GOAL := help
-.PHONY: help env build provision deprovision restart logs status clean
+.PHONY: help env build provision deprovision restart logs status example-policies check-cases clean
 
 help: ## Show this help
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n\n"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n\n"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo
 
 env: ## Create .env from .env.example if missing
@@ -41,6 +41,12 @@ logs: ## Tail logs (all, or one service: make logs s=backend)
 
 status: ## Backend status: keys configured, worker running, counters
 	@curl -fsS http://localhost:$(BACKEND_PORT)/status && echo
+
+example-policies: ## Create the five example policies from plans/EXAMPLE_POLICY_CURLS.md (skips ones that exist)
+	@./scripts/create-example-policies.sh
+
+check-cases: ## Send 25 purchases to /check against the example policies and print pass/fail
+	@./scripts/run-check-cases.sh
 
 clean: ## Remove local build outputs
 	rm -rf backend/target frontend/.next

@@ -13,6 +13,7 @@ public record Decision(
         String authorizationId,
         String runKey,
         String source,
+        String policyId,
         String state,
         String visecaDecision,
         List<String> reasonCodes,
@@ -44,8 +45,14 @@ public record Decision(
     }
 
     public Decision withPosted(boolean ok, String error) {
-        return new Decision(authorizationId, runKey, source, state, visecaDecision, reasonCodes, customerMessage, evidence, checks,
+        return new Decision(authorizationId, runKey, source, policyId, state, visecaDecision, reasonCodes, customerMessage, evidence, checks,
                 usedLlm, decidedBy, engineVersion, decidedAt, purchaseTimestamp, merchantId, merchantName, itemIds, billingAmountChf, ok, error);
+    }
+
+    public Decision withPolicy(String id) {
+        return new Decision(authorizationId, runKey, source, id, state, visecaDecision, reasonCodes, customerMessage, evidence, checks,
+                usedLlm, decidedBy, engineVersion, decidedAt, purchaseTimestamp, merchantId, merchantName, itemIds, billingAmountChf,
+                postedToViseca, visecaError);
     }
 
     /** The customer's answer to a pending_human decision. */
@@ -55,7 +62,7 @@ public record Decision(
         codes.add("customer_" + choice + "d");
         List<Evidence> ev = new ArrayList<>(evidence);
         ev.addAll(extraEvidence);
-        return new Decision(authorizationId, runKey, source, newState, visecaFor(newState), codes, message, ev, checks,
+        return new Decision(authorizationId, runKey, source, policyId, newState, visecaFor(newState), codes, message, ev, checks,
                 usedLlm, "customer", engineVersion, Instant.now().toString(), purchaseTimestamp, merchantId, merchantName, itemIds,
                 billingAmountChf, postedToViseca, visecaError);
     }

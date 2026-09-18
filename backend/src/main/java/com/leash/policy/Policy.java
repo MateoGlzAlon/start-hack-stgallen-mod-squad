@@ -6,7 +6,7 @@ import java.util.List;
 /** Our copy of a customer's wallet policy (the Viseca API calls it a mandate). Stored in store/policies.json. */
 public class Policy {
     public String id;
-    /** draft | active | revoked */
+    /** active | revoked (there is no draft step: a policy is active as soon as it is created) */
     public String status;
     public String instruction;
     public List<Rule> hardRules = new ArrayList<>();

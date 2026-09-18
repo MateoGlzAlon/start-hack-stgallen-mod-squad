@@ -27,11 +27,27 @@ public class CheckController {
      * optional ?run_id= scopes spend windows and duplicate detection.
      */
     @Operation(summary = "Decide a purchase",
-            description = "Body: a Viseca authorization event (or the whole poll envelope with run_id + data). Runs the hard rules, and only if they cannot "
-                    + "settle it asks the LLM judge; falls back to the policy's uncertainty_policy. Without policy_id the event's own mandate snapshot is enforced. "
-                    + "The decision is remembered by authorization_id: sending the same id again returns the saved decision, so change AU_DEMO_1 to re-run the example.",
+            description = "Body: a Viseca authorization event (or the whole poll envelope with run_id + data). "
+                    + "No policy_id and no mandate in the event (the normal call): ALL active policies (policies.json; drafts and revoked ones excluded) and the purchase are "
+                    + "sent to OpenAI in one call, which answers approved / denied / pending_human and names the policy that allows it (policy_id). The hard rules only veto: "
+                    + "the model cannot approve under a policy whose rule the purchase breaks. If the model is unavailable, a clean rule pass still approves, otherwise the "
+                    + "uncertainty_policy applies. With policy_id, or with a mandate inside the event (the Viseca worker path), that one policy is enforced: rules first, "
+                    + "the model only for what they cannot settle. "
+                    + "The decision is remembered by authorization_id: sending the same id again returns the saved decision, so change the id to re-run an example.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = "application/json",
-                    examples = @ExampleObject(name = "grocery under the limit", value = """
+                    examples = {@ExampleObject(name = "any active policy (no mandate in the event)", value = """
+{
+  "authorization": {
+    "authorization_id": "AU_DEMO_2",
+    "card_id": "CA0001",
+    "timestamp": "2026-08-12T09:00:00Z",
+    "billing_amount_chf": 165.0,
+    "merchant": {"merchant_id": "ME0999", "merchant_name": "Run Specialists", "merchant_category": "sporting_goods", "merchant_country": "CH"},
+    "items": [{"line_no": 1, "item_id": "IT0999", "item_name": "Road running shoes, black, size 43", "item_category": "sporting_goods",
+               "quantity": 1, "unit_price": 165.0, "currency": "CHF", "item_details": "Black road-running shoe, size 43, 30-day returns"}]
+  }
+}"""),
+                    @ExampleObject(name = "grocery under the limit (mandate inside the event)", value = """
 {
   "type": "authorization.request",
   "request_id": "req_demo_1",
@@ -55,7 +71,7 @@ public class CheckController {
       {"field": "items.item_category", "operator": "in", "value": ["groceries"]},
       {"field": "merchant.familiar", "operator": "=", "value": "true"}]
   }
-}"""))))
+}""")})))
     @PostMapping("/check")
     Decision check(@RequestBody JsonNode body,
                    @Parameter(description = "Enforce this local policy instead of the event's mandate snapshot") @RequestParam(name = "policy_id", required = false) String policyId,

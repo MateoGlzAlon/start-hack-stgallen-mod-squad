@@ -8,7 +8,7 @@ services:
       VISECA_BASE_URL: ${VISECA_BASE_URL:-https://saw26api.ashyground-364e1d07.switzerlandnorth.azurecontainerapps.io}
       TEAM_API_KEY: ${TEAM_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1}
       STORE_DIR: /store
       DATA_DIR: /data
     volumes:

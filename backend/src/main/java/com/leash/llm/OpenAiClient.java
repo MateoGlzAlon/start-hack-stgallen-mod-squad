@@ -31,6 +31,16 @@ public class OpenAiClient {
         return settings.openaiModel;
     }
 
+    private HttpResponse<String> post(ObjectNode body, Duration timeout) throws IOException, InterruptedException {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(settings.openaiBaseUrl + "/chat/completions"))
+                .timeout(timeout)
+                .header("Authorization", "Bearer " + settings.openaiApiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(Json.MAPPER.writeValueAsString(body)))
+                .build();
+        return http.send(req, HttpResponse.BodyHandlers.ofString());
+    }
+
     /** Sends system+user messages and returns the model's answer parsed as JSON matching {@code schema}. */
     public JsonNode chatJson(String system, String user, String schemaName, JsonNode schema, Duration timeout) throws LlmException {
         if (!configured()) throw new LlmException("OPENAI_API_KEY is not set");
@@ -47,13 +57,12 @@ public class OpenAiClient {
             js.put("strict", true);
             js.set("schema", schema);
 
-            HttpRequest req = HttpRequest.newBuilder(URI.create(settings.openaiBaseUrl + "/chat/completions"))
-                    .timeout(timeout)
-                    .header("Authorization", "Bearer " + settings.openaiApiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(Json.MAPPER.writeValueAsString(body)))
-                    .build();
-            HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+            body.put("temperature", 0);            // predictable answers; models that reject it get one retry without
+            HttpResponse<String> res = post(body, timeout);
+            if (res.statusCode() == 400 && res.body().contains("temperature")) {
+                body.remove("temperature");
+                res = post(body, timeout);
+            }
             if (res.statusCode() != 200) {
                 String b = res.body();
                 throw new LlmException("OpenAI HTTP " + res.statusCode() + ": " + b.substring(0, Math.min(300, b.length())));
