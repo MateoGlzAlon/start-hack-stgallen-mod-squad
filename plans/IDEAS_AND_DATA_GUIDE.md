@@ -43,7 +43,7 @@ Working notes for the team: what to build, what to show, and how to use every fi
 | UI | **Next.js (App Router) + TypeScript + Tailwind + shadcn/ui** (`frontend/`) | Talks only to our backend via `next.config` rewrites (`/api/* → http://localhost:8080/*`), so no CORS pain and the Viseca key never reaches the browser |
 | Live updates | **SSE** (`SseEmitter`) from backend → `EventSource` in the UI | Streams decisions, pending step-ups, ledger changes |
 | DB | **PostgreSQL 16** via `docker-compose.yml` | Also loads the CSVs on first boot (`COPY` or Commons CSV) so history features are plain SQL |
-| LLM (optional) | Anthropic API over `HttpClient`, small fast model, 3–5 s timeout | Policy compilation + attribute extraction only; always with a deterministic fallback |
+| LLM (optional) | OpenAI API over `HttpClient`, small fast model, 3–5 s timeout | Policy compilation + attribute extraction only; always with a deterministic fallback |
 
 **Environment notes (checked on this machine):** Java 25 *runtime* is present but `javac`, Maven, Gradle and `psql` are not. Install a JDK 21 (e.g. `sudo apt install openjdk-21-jdk`), generate the project from Spring Initializr (it includes `mvnw`), and run Postgres with Docker (installed). Node 24 / npm 11 are present for the frontend.
 
