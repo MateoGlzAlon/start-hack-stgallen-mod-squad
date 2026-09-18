@@ -14,7 +14,8 @@
 - **UI:** Next.js/React (TypeScript, Tailwind) in `frontend/` — **not started**. It only talks to our backend, through a proxy (`/api/* → backend`); never to Viseca, and the team key stays in the backend env. The backend has no CORS config, so don't call it straight from the browser.
 - **Storage:** no database. Policies are a JSON text file (`store/policies.json`, `STORE_DIR`); decisions and the spend ledger are in memory and are lost on restart. Postgres was dropped from compose because nothing used it — re-add it only if we need durable decisions/audit.
 - **LLM:** OpenAI chat completions with strict JSON-schema output (`OPENAI_API_KEY`, `OPENAI_MODEL`, default `gpt-4o-mini`). Two uses: the **policy compiler** (required to create a policy; without a key it returns 503 and never a made-up policy) and the **purchase judge** (optional; the engine decides without it).
-- **Run it:** `make provision` builds and starts everything in Docker, `make deprovision` stops it and deletes the volumes (saved policies included). Other targets: `make status | logs | restart s=backend | clean`. Keys go in `.env` (`make env` copies `.env.example`).
+- **API docs:** Swagger UI at `http://localhost:8080/swagger-ui.html` (OpenAPI JSON at `/v3/api-docs`), via springdoc 2.8. Every endpoint has a summary, and the POST bodies have working examples (the `/check` one is a real event that gets approved). When you add or change an endpoint, keep its `@Operation` text and example in `web/*Controller.java` up to date.
+- **Run it:** `make provision` builds and starts everything in Docker, `make deprovision` stops it and deletes the volumes (saved policies included). Other targets: `make build` (images only, doesn't start) `| status | logs | restart s=backend | clean`. Keys go in `.env` (`make env` copies `.env.example`).
 - **Our states vs the API:** `approved` → `approve`, `denied` → `decline`, `pending_human` → `step_up`.
 
 ## Project structure
@@ -29,7 +30,7 @@ backend/                    Spring Boot API + decision engine + Viseca worker (D
     engine/  CheckService (the decision pipeline + memory), PurchaseFacts, RuleEvaluator, Fields (rule vocabulary),
              HistoryIndex (familiarity from history CSV), TextScan (injection tripwire), LlmJudge, Decision, Evidence
     worker/  VisecaClient, DecisionWorker (long-poll loop), RunService (start a run for a policy)
-    web/     PolicyController, CheckController, RunController, StatusController, ApiErrors
+    web/     PolicyController, CheckController, RunController, StatusController (Swagger annotations live here), OpenApiConfig, ApiErrors
 frontend/                   (planned)
 docker-compose.yml          backend; frontend joins via the "ui" profile once frontend/Dockerfile exists
 Makefile  .env.example      lifecycle targets; env template (.env is gitignored)
@@ -58,9 +59,9 @@ resources/                  case brief + Viseca data pack (mounted read-only int
 
 **Worker** (`DecisionWorker`): starts when `TEAM_API_KEY` is set and `WORKER_ENABLED` isn't false. It long-polls `/v1/decision-requests/next?wait=25`, handles purchases one at a time in delivery order, and posts `/decision` right away, `step_up` included; it never waits for a human. A 204 just polls again. Evidence is sent as objects; if Viseca rejects the body with 400/422 (the format isn't specified) it retries with strings, then without evidence.
 
-**Endpoints:** `GET /status`, `GET /actuator/health` · `POST|GET /policies`, `GET|PATCH|DELETE /policies/{id}`, `POST /policies/{id}/confirm` · `POST /check?policy_id=&run_id=` (body: an event or a poll envelope), `POST /check/{authorization_id}/resolve` · `GET /decisions?run_id=&state=`, `GET /decisions/{authorization_id}` · `POST /runs`, `GET /runs/{run_id}`. Errors are `{"error": {"status", "message"}}`. A decision has `state`, `viseca_decision`, `reason_codes`, `customer_message`, `evidence[]`, `checks[]` (per-rule verdicts), `used_llm`, `decided_by` (`engine` | `customer`), `posted_to_viseca`.
+**Endpoints** (full list with examples in Swagger UI): `GET /status`, `GET /actuator/health` · `POST|GET /policies`, `GET|PATCH|DELETE /policies/{id}`, `POST /policies/{id}/confirm` · `POST /check?policy_id=&run_id=` (body: an event or a poll envelope), `POST /check/{authorization_id}/resolve` · `GET /decisions?run_id=&state=`, `GET /decisions/{authorization_id}` · `POST /runs`, `GET /runs/{run_id}`. Errors are `{"error": {"status", "message"}}`. A decision has `state`, `viseca_decision`, `reason_codes`, `customer_message`, `evidence[]`, `checks[]` (per-rule verdicts), `used_llm`, `decided_by` (`engine` | `customer`), `posted_to_viseca`.
 
-**Config (env):** `TEAM_API_KEY`, `VISECA_BASE_URL`, `WORKER_ENABLED`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `COMPILE_TIMEOUT_MS` (30000), `JUDGE_TIMEOUT_MS` (5000), `STORE_DIR` (`store`), `DATA_DIR` (the data pack), host ports `BACKEND_PORT` / `FRONTEND_PORT`. Without Docker: `cd backend && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./mvnw spring-boot:run` (the default `DATA_DIR` works from `backend/`).
+**Config (env):** `TEAM_API_KEY`, `VISECA_BASE_URL`, `WORKER_ENABLED`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `COMPILE_TIMEOUT_MS` (30000), `JUDGE_TIMEOUT_MS` (5000), `STORE_DIR` (`store`), `DATA_DIR` (the data pack), host ports `BACKEND_PORT` / `FRONTEND_PORT`. Without Docker (IntelliJ or `cd backend && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./mvnw spring-boot:run`): the backend reads the repo's `.env` itself (`spring.config.import` in `application.properties`), so no IntelliJ env setup is needed; a real environment variable wins over `.env`. Run it with `backend/` as the working directory (the default `DATA_DIR` is relative to it).
 
 **Not done yet / known gaps:** the frontend; live updates for the UI (poll `GET /decisions?state=pending_human`, no SSE); the 120 s human window isn't tracked; decisions aren't persisted; natural-language tightening (PATCH takes structured rules only); nothing has been run against the real OpenAI or Viseca APIs yet (only against mocks), so the model default and Viseca's `evidence` format are unverified.
 

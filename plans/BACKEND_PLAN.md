@@ -50,5 +50,5 @@ A background loop polls `/v1/decision-requests/next`, calls the check from secti
 
 ## Differences from CLAUDE.md
 
-- **Keys:** `.env.example` has `ANTHROPIC_API_KEY`, but the plan uses OpenAI. Rename it to `OPENAI_API_KEY`.
+- **Keys:** the LLM is OpenAI, so the key is `OPENAI_API_KEY` (the first `.env.example` had `ANTHROPIC_API_KEY`; renamed).
 - **Storage:** a JSON file replaces Postgres for now, which is fine for the demo.
