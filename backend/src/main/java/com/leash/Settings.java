@@ -18,6 +18,7 @@ public class Settings {
     public final long judgeTimeoutMs;
     public final Path storeDir;
     public final Path dataDir;
+    public final String fxRatesFile;
 
     public Settings(@Value("${leash.viseca.base-url}") String visecaBaseUrl,
                     @Value("${leash.viseca.api-key}") String visecaApiKey,
@@ -28,7 +29,8 @@ public class Settings {
                     @Value("${leash.openai.compile-timeout-ms}") long compileTimeoutMs,
                     @Value("${leash.openai.judge-timeout-ms}") long judgeTimeoutMs,
                     @Value("${leash.store-dir}") String storeDir,
-                    @Value("${leash.data-dir}") String dataDir) {
+                    @Value("${leash.data-dir}") String dataDir,
+                    @Value("${leash.fx.rates-file:}") String fxRatesFile) {
         this.visecaBaseUrl = visecaBaseUrl.replaceAll("/+$", "");
         this.visecaApiKey = visecaApiKey.trim();
         this.workerEnabled = workerEnabled;
@@ -39,5 +41,6 @@ public class Settings {
         this.judgeTimeoutMs = judgeTimeoutMs;
         this.storeDir = Path.of(storeDir);
         this.dataDir = Path.of(dataDir);
+        this.fxRatesFile = fxRatesFile.trim();
     }
 }

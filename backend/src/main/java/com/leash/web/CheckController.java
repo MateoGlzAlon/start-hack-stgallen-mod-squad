@@ -33,6 +33,8 @@ public class CheckController {
                     + "the model cannot approve under a policy whose rule the purchase breaks. If the model is unavailable, a clean rule pass still approves, otherwise the "
                     + "uncertainty_policy applies. With policy_id, or with a mandate inside the event (the Viseca worker path), that one policy is enforced: rules first, "
                     + "the model only for what they cannot settle. "
+                    + "The amount is billing_amount_chf, or amount x the fixed exchange rate (loaded at startup, see GET /status) when only amount + currency are sent, so a price of EUR 205 "
+                    + "fits a CHF 200 limit (CHF 194.75). If both are sent and disagree, the higher one is used and an approval turns into a question. "
                     + "The decision is remembered by authorization_id: sending the same id again returns the saved decision, so change the id to re-run an example.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = "application/json",
                     examples = {@ExampleObject(name = "any active policy (no mandate in the event)", value = """

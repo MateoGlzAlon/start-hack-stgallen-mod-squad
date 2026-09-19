@@ -86,7 +86,7 @@ public class CheckService {
             try {
                 d = decideFor(f, policyId, key, source);
                 // Always on, whatever the policy says: an approval at a lookalike seller becomes a question for the customer.
-                if (!d.reasonCodes().contains("no_active_policy")) d = sellers.apply(f, d);
+                if (!d.reasonCodes().contains("no_active_policy")) d = withCurrency(f, sellers.apply(f, d));
             } catch (ApiException e) {
                 throw e;
             } catch (RuntimeException e) {
@@ -98,6 +98,24 @@ public class CheckService {
             if (!d.reasonCodes().contains("no_active_policy")) decisions.put(f.authorizationId(), d);
             return d;
         }
+    }
+
+    /**
+     * A price in EUR, GBP or USD: the conversion becomes evidence. A CHF amount that disagrees with price x the fixed rate is
+     * reported, and an approval then turns into a question for the customer (the checks already ran on the higher amount).
+     */
+    private Decision withCurrency(PurchaseFacts f, Decision d) {
+        if (f.priceNote() == null && f.mismatch() == null) return d;
+        List<Evidence> ev = new ArrayList<>(d.evidence());
+        if (f.priceNote() != null) ev.add(new Evidence("currency", "Price converted to CHF", f.priceNote(), "rates from " + Fx.source()));
+        if (f.mismatch() == null) return d.with(d.state(), d.reasonCodes(), d.customerMessage(), ev);
+        ev.add(new Evidence("currency", "CHF amount does not match the price", f.mismatch(), "the higher amount was used for every check"));
+        if (APPROVED.equals(d.state())) {
+            return d.with(PENDING, List.of("amount_mismatch", "customer_confirmation"), "Please check the amount before I buy: " + f.mismatch() + ".", ev);
+        }
+        List<String> codes = new ArrayList<>(d.reasonCodes());
+        if (!codes.contains("amount_mismatch")) codes.add("amount_mismatch");
+        return d.with(d.state(), codes, d.customerMessage(), ev);
     }
 
     private Decision decideFor(PurchaseFacts f, String policyId, String key, String source) {
@@ -210,7 +228,7 @@ public class CheckService {
         if (auth.path("recent_attempt_count_10m").asInt(0) >= 1) flags.add("recent_activity: other attempts in the last 10 minutes");
 
         if (unknowns.isEmpty() && flags.isEmpty()) {
-            String msg = "Approved: all " + checks.size() + " of your checks passed (CHF " + f.billingChf().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() + ").";
+            String msg = "Approved: all " + checks.size() + " of your checks passed (" + f.priceText() + ").";
             return settled(f, pv, key, source, APPROVED, List.of("all_rules_passed"), msg, ev, checks);
         }
         return new Prepared(pv, null, checks, unknowns, flags, ev);

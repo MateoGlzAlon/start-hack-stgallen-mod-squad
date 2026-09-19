@@ -3,6 +3,7 @@ package com.leash.policy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.leash.Json;
 import com.leash.engine.Fields;
+import com.leash.engine.Fx;
 import com.leash.llm.LlmException;
 import com.leash.llm.OpenAiClient;
 import com.leash.Settings;
@@ -129,7 +130,7 @@ public class PolicyCompiler {
                 - hard_rules: machine-checkable limits. Only use these fields (exact names):
                 %s
                   Operators: < <= = != > >= in not_in. "in"/"not_in" take a string or a list of strings; the others compare numbers.
-                  Amounts must be in CHF (convert other currencies with EUR 0.95, GBP 1.12, USD 0.87 CHF) and the field name must \
+                  Amounts must be in CHF (convert other currencies to CHF at %s) and the field name must \
                 keep _chf. Use currency "CHF" for money rules. scope: "purchase" for a per-order limit; "period" with period_days for a \
                 rolling total across several days (e.g. per 7 days). Set unused optional keys (currency, scope, period_days) to null.
                   When the customer names the kind of goods ("groceries", "clothing", "electronics"), write an items.item_category rule so \
@@ -156,6 +157,6 @@ public class PolicyCompiler {
                   hard_rules: [authorization.billing_amount_chf <= 50 CHF period 7 days, merchant.familiar = "true", items.item_category in ["groceries"]]; \
                 uncertainty_policy decline; guidance ["Only pasta and milk"]; open_questions [].
 
-                Never invent limits or requirements the customer did not state. Never loosen anything. Enforce exactly what was said.""".formatted(fields);
+                Never invent limits or requirements the customer did not state. Never loosen anything. Enforce exactly what was said.""".formatted(fields, Fx.describe());
     }
 }

@@ -14,6 +14,7 @@ services:
       JUDGE_TIMEOUT_MS: ${JUDGE_TIMEOUT_MS:-15000}
       STORE_DIR: /store
       DATA_DIR: /data
+      FX_RATES_FILE: ${FX_RATES_FILE:-}
     volumes:
       - ./resources/viseca-2026-main/data:/data:ro
       - store:/store

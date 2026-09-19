@@ -24,9 +24,6 @@ public final class RuleEvaluator {
 
     private record Cmp(String verdict, String shown) {}
 
-    private static final Map<String, BigDecimal> FX = Map.of(
-            "CHF", BigDecimal.ONE, "EUR", new BigDecimal("0.95"), "GBP", new BigDecimal("1.12"), "USD", new BigDecimal("0.87"));
-
     /**
      * @param view        the event plus derived facts (see PurchaseFacts.view)
      * @param thisAmount  this order's billing_amount_chf, added to the approved spend for period rules
@@ -45,6 +42,7 @@ public final class RuleEvaluator {
                 return new Result(rule, UNKNOWN, null, label + ": period rule is incomplete");
             }
             BigDecimal target = target(n, rule, true);
+            if (target == null) return new Result(rule, UNKNOWN, null, label + ": no exchange rate for " + rule.currency());
             BigDecimal spent = periodSpend.apply(rule.periodDays());
             BigDecimal total = spent.add(thisAmount);
             Boolean ok = numeric(total, op, target);
@@ -85,7 +83,9 @@ public final class RuleEvaluator {
         if (target instanceof Number n) {
             BigDecimal a = number(actual);
             if (a == null) return new Cmp(UNKNOWN, text);
-            Boolean ok = numeric(a, op, target(n, rule, money));
+            BigDecimal limit = target(n, rule, money);
+            if (limit == null) return new Cmp(UNKNOWN, fmt(a, money));
+            Boolean ok = numeric(a, op, limit);
             return new Cmp(ok == null ? UNKNOWN : ok ? PASS : FAIL, fmt(a, money));
         }
         List<String> targets = target instanceof List<?> l ? l.stream().map(String::valueOf).toList() : List.of(String.valueOf(target));
@@ -111,12 +111,10 @@ public final class RuleEvaluator {
         };
     }
 
-    /** Rule value as a BigDecimal, converted to CHF when the rule states another currency on a *_chf field. */
+    /** Rule value as a BigDecimal, converted to CHF when the rule states another currency on a *_chf field. Null when there is no rate for that currency. */
     private static BigDecimal target(Number n, Rule rule, boolean money) {
         BigDecimal t = new BigDecimal(n.toString());
-        if (money && rule.currency() != null && FX.containsKey(rule.currency())) {
-            t = t.multiply(FX.get(rule.currency())).setScale(2, RoundingMode.HALF_UP);
-        }
+        if (money && rule.currency() != null) t = Fx.toChf(t, rule.currency());
         return t;
     }
 
@@ -152,7 +150,10 @@ public final class RuleEvaluator {
 
     private static String targetText(Rule rule, boolean money) {
         if (rule.value() instanceof List<?> l) return String.join(", ", l.stream().map(String::valueOf).toList());
-        if (rule.value() instanceof Number n) return (money ? "CHF " : "") + fmt(target(n, rule, money), money);
+        if (rule.value() instanceof Number n) {
+            BigDecimal t = target(n, rule, money);
+            return t == null ? rule.currency() + " " + n : (money ? "CHF " : "") + fmt(t, money);
+        }
         return String.valueOf(rule.value());
     }
 

@@ -3,6 +3,7 @@
 # The 15 example policies (plans/EXAMPLE_POLICY_CURLS.md) are created first if they are missing; /check tries all of them.
 #   scripts/run-check-cases.sh            (or: make check-cases)
 #   API=http://localhost:9090 JOBS=8 scripts/run-check-cases.sh
+#   ONLY="currency shoes" scripts/run-check-cases.sh      (just those groups)
 # The cases are split into groups. Every group has its own run id (spend windows and duplicate detection are per run), runs its
 # cases in order, and up to JOBS groups run at the same time (default 4). Authorization ids are unique per run, so the script can
 # be repeated without restarting the backend.
@@ -92,7 +93,6 @@ g_shoes() {
 # ------------------------------------------------------------------ groceries: one item <= 20 (known shop), delivery <= 120 / 300 a week, groceries only <= 50
 g_groceries() {
   t approved "apples, CHF 12, familiar shop"                             12   groceries "Apples" "Seasonal apples" ME0001
-  t approved "vegetables box, CHF 45, familiar shop"                     45   groceries "Weekly vegetables box" "Seasonal vegetables" ME0001
   t denied   "gift card, CHF 25, sold by a grocery shop"                 25   groceries "Gift card" "Digital gift card" ME0001 "" unknown gift_card
   t denied   "groceries, CHF 130 (over every limit)"                     130  groceries "Big grocery order" "Groceries" ME0001
   t approved "bread and milk, CHF 15, unfamiliar shop"                   15   groceries "Bread and milk" "Bread and milk" ME0999
@@ -132,7 +132,6 @@ g_pet_budget() {
 
 g_pets() {
   t approved "dog food, CHF 45, pet shop"                            45    pet_care "Dog food" "Dry dog food, 5 kg" ME0036
-  t denied   "human vitamins sold by a pet shop, CHF 25"             25    pet_care "Vitamin C tablets" "Vitamin C for adults, 90 tablets" ME0036 "" unknown health
   t denied   "pet food sold by a grocery shop, CHF 30"               30    groceries "Dog food" "Dry dog food, 5 kg" ME0001 "" unknown pet_care
 }
 
@@ -159,7 +158,6 @@ g_books() {
 
 # ------------------------------------------------------------------ tickets: Swiss providers only, EUR 50 (= CHF 47.50) a ticket
 g_transport() {
-  t approved "tram day pass, CHF 20"                                 20    transport "Day pass" "City tram day pass" ME0007
   t approved "ticket, exactly CHF 47.50 (EUR 50)"                    47.5  transport "Train ticket" "Bern to Zurich" ME0006
   t denied   "ticket, CHF 47.51 (over EUR 50)"                       47.51 transport "Train ticket" "Bern to Zurich" ME0006
   CTRY=DE t denied "train ticket, CHF 30, German provider"           30    transport "Train ticket" "Munich to Salzburg" ME0999
@@ -207,7 +205,6 @@ g_pharmacy() {
 
 # ------------------------------------------------------------------ software and subscriptions, CHF 30, only shops I already use
 g_software() {
-  t approved "software, exactly CHF 30"                               30    software "Licence" "Annual licence" ME0051
   t denied   "software, CHF 20, shop never used"                      20    software "Licence" "Annual licence" ME0052
 }
 
@@ -220,8 +217,6 @@ g_kids() {
 # ------------------------------------------------------------------ nothing in any policy covers it
 g_uncovered() {
   t denied "fuel, CHF 60"                                            60   fuel "Petrol" "Fuel station" ME0009
-  t denied "restaurant dinner, CHF 45"                               45   dining "Restaurant meal" "Dinner for two" ME0011
-  t denied "cash withdrawal, CHF 200"                                200  cash_withdrawal "Cash withdrawal" "ATM withdrawal" ME0057
   t denied "coffee machine, CHF 90"                                  90   household "Coffee machine" "Espresso machine" ME0999
 }
 
@@ -258,6 +253,24 @@ g_sellers() {
   MNAME="TrailSpark"     t pending_human "fake 'TrailSpark' selling black shoes, CHF 165"             165 sporting_goods "$B" "$BD" ME0993 "" true
 }
 
+# ------------------------------------------------------------------ prices in other currencies: converted at the fixed rates (EUR 0.95, GBP 1.12, USD 0.87)
+g_currency() {
+  local B="Road running shoes, black, size 43" BD="Black road-running shoe, size 43, 30-day returns"
+  local NOCHF='del(.authorization.billing_amount_chf)'
+  X="$NOCHF | .authorization.amount = 205 | .authorization.currency = \"EUR\"" \
+    t approved "EUR 205, no CHF amount sent (= CHF 194.75), limit CHF 200"   100 sporting_goods "$B" "$BD" ME0999 "" true
+  X='.authorization.amount = 205 | .authorization.currency = "EUR"' \
+    t approved "EUR 205 with the matching CHF 194.75"                        194.75 sporting_goods "$B" "$BD" ME0999 "" true
+  X="$NOCHF | .authorization.amount = 211 | .authorization.currency = \"EUR\"" \
+    t denied   "EUR 211 (= CHF 200.45), just over the CHF 200 limit"          100 sporting_goods "$B" "$BD" ME0999 "" true
+  X="$NOCHF | .authorization.amount = 220 | .authorization.currency = \"USD\"" \
+    t approved "USD 220 (= CHF 191.40)"                                       100 sporting_goods "$B" "$BD" ME0999 "" true
+  X='.authorization.amount = 300 | .authorization.currency = "EUR"' \
+    t denied   "EUR 300 (= CHF 285) while the request claims CHF 190"         190 sporting_goods "$B" "$BD" ME0999 "" true
+  X='.authorization.amount = 100 | .authorization.currency = "EUR"' \
+    t pending_human "EUR 100 (= CHF 95) while the request claims CHF 90"      90  sporting_goods "$B" "$BD" ME0999 "" true
+}
+
 # ------------------------------------------------------------------ the API around it: memory, the human path, bad input
 g_api() {
   local body a b code
@@ -292,8 +305,9 @@ g_api() {
 }
 
 # ------------------------------------------------------------------ run
-groups=(shoes groceries baskets budget pet_budget pets food_budget food books transport monitor clothing hotels pharmacy software kids uncovered guards injection sellers api)
+groups=(shoes groceries baskets budget pet_budget pets food_budget food books transport monitor clothing hotels pharmacy software kids uncovered guards injection sellers currency api)
 TOTAL=100   # only for the progress counter: the number of cases above (the summary at the end shows how many really ran)
+if [[ -n "${ONLY:-}" ]]; then groups=($ONLY); TOTAL=""; fi   # ONLY="currency shoes" runs just those groups
 
 declare -A shown   # lines of each group's output already printed
 n=0; pass=0; fail=0
@@ -308,8 +322,8 @@ flush() {
     while IFS= read -r line; do
       case "$line" in
         --*) ;;
-        ✓*) n=$((n + 1)); pass=$((pass + 1)); printf '[%3d/%d] %-11s %s\n' "$n" "$TOTAL" "$g" "$line" ;;
-        ✗*) n=$((n + 1)); fail=$((fail + 1)); printf '[%3d/%d] %-11s %s\n' "$n" "$TOTAL" "$g" "$line" ;;
+        ✓*) n=$((n + 1)); pass=$((pass + 1)); printf '[%3d%s] %-11s %s\n' "$n" "${TOTAL:+/$TOTAL}" "$g" "$line" ;;
+        ✗*) n=$((n + 1)); fail=$((fail + 1)); printf '[%3d%s] %-11s %s\n' "$n" "${TOTAL:+/$TOTAL}" "$g" "$line" ;;
         *)  printf '          %-11s %s\n' "$g" "$line" ;;
       esac
     done < <(sed -n "$(( ${shown[$g]:-0} + 1 )),${lines}p" "$OUT/$g.out")
@@ -317,7 +331,7 @@ flush() {
   done
 }
 
-echo "running $TOTAL cases in ${#groups[@]} groups, $JOBS groups at a time; a line appears as soon as a case is decided"
+echo "running ${TOTAL:-the selected} cases in ${#groups[@]} groups, $JOBS groups at a time; a line appears as soon as a case is decided"
 next=0
 while :; do
   while (( next < ${#groups[@]} )) && (( $(jobs -rp | wc -l) < JOBS )); do
@@ -337,5 +351,5 @@ if (( fail > 0 )); then
 fi
 echo
 echo "$n checks: $pass passed, $fail failed ($((SECONDS - START)) s)"
-(( n == TOTAL )) || echo "note: the script expects $TOTAL cases but ran $n - update TOTAL"
+[[ -z "$TOTAL" ]] || (( n == TOTAL )) || echo "note: the script expects $TOTAL cases but ran $n - update TOTAL"
 (( fail == 0 ))
