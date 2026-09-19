@@ -4,12 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type Policy } from '@/lib/api';
 import PolicyCard from '@/components/PolicyCard';
 
-const EXAMPLES = [
-  'Buy me black running shoes for up to CHF 200. Ask me when uncertain.',
-  'Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain.',
-  'Order our household groceries for delivery. Keep each order at or below CHF 120 including delivery, and keep the total across any seven days at or below CHF 300. Ask me when uncertain.',
-  'Only buy groceries, never gift cards, cosmetics or memberships, at most CHF 50 per order. If you are unsure, decline.',
-];
 
 type Q = { question: string; why: string; choices: string[] };
 // base = the sentence plus every answer given so far; each round asks what is still missing
@@ -110,13 +104,6 @@ export default function PoliciesPage() {
             onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') start(); }}
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1.5">
-              {EXAMPLES.map((ex, i) => (
-                <button key={i} type="button" className="chip transition hover:border-accent hover:text-fg" onClick={() => setText(ex)}>
-                  Example {i + 1}
-                </button>
-              ))}
-            </div>
             <button className="btn-primary w-full sm:w-auto" onClick={start} disabled={busy !== '' || !text.trim()}>
               {busy === 'check' ? 'Checking…' : busy === 'create' ? 'Understanding…' : 'Create policy'}
             </button>

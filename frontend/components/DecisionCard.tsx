@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import type { Decision, Evidence } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import type { Decision, Policy } from '@/lib/api';
 import { VERDICT, describeRule, money, timeAgo } from '@/lib/format';
+import { byRelevance, describeEvidence, explainCheck, humanize, policyName, type Line } from '@/lib/evidence';
+import { getPolicies } from '@/lib/policyNames';
 import { Check, Cross, Question } from './icons';
 
 const TONE = {
@@ -11,8 +13,11 @@ const TONE = {
   no: { text: 'text-no', bg: 'bg-no/12', border: 'border-no/30' },
 };
 
-const SOURCE: Record<string, string> = {
-  rule: 'Rule', model: 'AI', seller_check: 'Seller', currency: 'Currency', text_scan: 'Shop text', customer: 'You',
+const LINE_TONE: Record<Line['tone'], string> = {
+  ok: 'bg-ok/12 text-ok',
+  no: 'bg-no/12 text-no',
+  ask: 'bg-ask/12 text-ask',
+  muted: 'bg-fg/6 text-muted',
 };
 
 export function VerdictBadge({ state }: { state: Decision['state'] }) {
@@ -33,14 +38,13 @@ function Mark({ verdict }: { verdict: 'pass' | 'fail' | 'unknown' }) {
   return <span className="mt-0.5 text-ask"><Question width={16} height={16} /></span>;
 }
 
-function EvidenceRow({ e }: { e: Evidence }) {
+function EvidenceRow({ line }: { line: Line }) {
   return (
     <li className="flex gap-3 py-2 text-sm">
-      <span className="mt-0.5 h-fit w-16 shrink-0 rounded-md bg-fg/6 px-1.5 py-0.5 text-center text-[11px] font-medium text-muted">{SOURCE[e.source] ?? e.source}</span>
+      <span className={`mt-0.5 h-fit w-[4.5rem] shrink-0 rounded-md px-1.5 py-0.5 text-center text-[11px] font-medium ${LINE_TONE[line.tone]}`}>{line.tag}</span>
       <span className="min-w-0 break-words">
-        {e.fact}
-        {e.value ? <span className="text-muted">: {e.value}</span> : null}
-        {e.note ? <span className="block text-xs text-muted">{e.note}</span> : null}
+        {line.text}
+        {line.sub ? <span className="block text-xs text-muted">{line.sub}</span> : null}
       </span>
     </li>
   );
@@ -57,8 +61,18 @@ export default function DecisionCard({
   const [busy, setBusy] = useState<'approve' | 'decline' | null>(null);
   const [err, setErr] = useState('');
   const t = TONE[VERDICT[d.state].tone];
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  useEffect(() => {
+    let live = true;
+    getPolicies().then((p) => live && setPolicies(p));
+    return () => { live = false; };
+  }, []);
+  const nameOf = (id: string) => policyName(policies.find((x) => x.id === id));
   // the rule results are shown above; the model also echoes raw facts ("item_name: ...", "authorization.order_returnable: unknown"): noise here
-  const rules = d.evidence.filter((e) => e.source !== 'rule' && !(e.source === 'model' && /^[a-z_]+(\.[a-z_]+)*: /.test(e.fact)));
+  const looked = d.evidence
+    .filter((e) => e.source !== 'rule' && !(e.source === 'model' && /^[a-z_]+(\.[a-z_]+)*: /.test(e.fact)))
+    .map((e) => describeEvidence(e, nameOf))
+    .sort(byRelevance);
 
   async function resolve(choice: 'approve' | 'decline') {
     if (!onResolve) return;
@@ -88,7 +102,7 @@ export default function DecisionCard({
         {d.reason_codes.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {d.reason_codes.map((c) => (
-              <span key={c} className="chip font-mono">{c}</span>
+              <span key={c} className="chip">{humanize(c)}</span>
             ))}
           </div>
         )}
@@ -121,24 +135,24 @@ export default function DecisionCard({
                     <Mark verdict={c.verdict} />
                     <span className="min-w-0">
                       {describeRule(c.rule)}
-                      {c.detail ? <span className="block break-words text-xs text-muted">{c.detail}</span> : null}
+                      <span className="block break-words text-xs text-muted">{explainCheck(c)}</span>
                     </span>
                   </li>
                 ))}
               </ul>
             </section>
           )}
-          {rules.length > 0 && (
+          {looked.length > 0 && (
             <section>
               <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">What I looked at</h4>
               <ul className="divide-y divide-line">
-                {rules.map((e, i) => <EvidenceRow key={i} e={e} />)}
+                {looked.map((line, i) => <EvidenceRow key={i} line={line} />)}
               </ul>
             </section>
           )}
           <p className="text-xs text-muted">
-            Decided by {d.decided_by === 'customer' ? 'you' : 'the engine'} · AI {d.used_llm ? 'used' : 'not needed'}
-            {d.policy_id ? ` · policy ${d.policy_id}` : ''} · {timeAgo(d.decided_at)}
+            {d.decided_by === 'customer' ? 'You made this decision' : d.used_llm ? 'Decided automatically, with the AI\u2019s help' : 'Decided automatically by your rules'}
+            {d.policy_id && nameOf(d.policy_id) ? ` · under \u201c${nameOf(d.policy_id)}\u201d` : ''} · {timeAgo(d.decided_at)}
           </p>
         </div>
       </details>
