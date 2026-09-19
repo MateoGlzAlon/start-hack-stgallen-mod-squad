@@ -1,5 +1,5 @@
 # Backend now; the frontend joins via the "ui" profile (the Makefile enables it once frontend/Dockerfile exists).
-# State (policies.json) lives in the `store` volume - `make deprovision` wipes it.
+# State (policies.json) lives in the `store` volume - `make deprovision` wipes it (and the `llm-models` model volume), `make deprovision_no_volumes` wipes only the policies and keeps the model (no new download).
 services:
   backend:
     build: ./backend
@@ -27,22 +27,35 @@ services:
       retries: 20
       start_period: 10s
 
-  # Local model for `make provision_local`: an OpenAI-compatible API on ollama:11434 (no key needed) that replaces the OpenAI API.
-  # Claude models cannot run locally, so this serves an open model chosen with LOCAL_MODEL.
-  ollama:
+  # Local model for `make provision_local`: llama.cpp's llama-server, an OpenAI-compatible API on llm:8080 (no key needed) that replaces the OpenAI API.
+  # It downloads the GGUF from Hugging Face itself (LOCAL_MODEL = <user>/<repo>[:quant]) into the llm-models volume, so only the first start is slow.
+  # Claude models cannot run locally, so this serves an open model. (Ollama was tried first: 0.34.2 refuses Hugging Face downloads, ollama/ollama#18526.)
+  llm:
     profiles: ["local"]
-    image: ollama/ollama:latest
-    container_name: leash-ollama
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: leash-llm
+    command:
+      - --hf-repo
+      - ${LOCAL_MODEL:-unsloth/Apertus-8B-Instruct-2509-GGUF:Q4_K_M}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size
+      - "16384"                      # split over the slots below: 8192 tokens per request
+      - --parallel
+      - "2"
     environment:
-      OLLAMA_KEEP_ALIVE: "-1"        # keep the model in memory between requests
+      LLAMA_CACHE: /models
     volumes:
-      - ollama:/root/.ollama         # downloaded models
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
+      - llm-models:/models           # downloaded models
+    healthcheck:                     # 503 while the model loads; the first start also downloads it (about 5 GB), hence the long allowance
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 5s
-      timeout: 5s
-      retries: 30
-    # GPU (needs the NVIDIA container toolkit): uncomment
+      timeout: 3s
+      retries: 1440
+      start_period: 30s
+    # GPU (needs the NVIDIA container toolkit): use the ghcr.io/ggml-org/llama.cpp:server-cuda image, add "--n-gpu-layers", "99" to the command and uncomment
     # deploy:
     #   resources:
     #     reservations:
@@ -66,4 +79,4 @@ services:
 
 volumes:
   store:
-  ollama:
+  llm-models:
