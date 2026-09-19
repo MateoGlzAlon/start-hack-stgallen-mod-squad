@@ -55,6 +55,13 @@ public record Decision(
                 postedToViseca, visecaError);
     }
 
+    /** Same decision with more evidence, and optionally a new state, reason codes and message (the seller check can turn an approval into a question). */
+    public Decision with(String newState, List<String> codes, String message, List<Evidence> ev) {
+        return new Decision(authorizationId, runKey, source, policyId, newState, visecaFor(newState), codes, message, ev, checks,
+                usedLlm, decidedBy, engineVersion, decidedAt, purchaseTimestamp, merchantId, merchantName, itemIds, billingAmountChf,
+                postedToViseca, visecaError);
+    }
+
     /** The customer's answer to a pending_human decision. */
     public Decision resolved(String choice, String message, List<Evidence> extraEvidence) {
         String newState = "approve".equals(choice) ? APPROVED : DENIED;

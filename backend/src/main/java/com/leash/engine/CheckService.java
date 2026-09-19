@@ -54,13 +54,15 @@ public class CheckService {
 
     private final PolicyStore policies;
     private final HistoryIndex history;
+    private final SellerCheck sellers;
     private final LlmJudge judge;
     private final VisecaClient viseca;
     private final Settings settings;
 
-    public CheckService(PolicyStore policies, HistoryIndex history, LlmJudge judge, VisecaClient viseca, Settings settings) {
+    public CheckService(PolicyStore policies, HistoryIndex history, SellerCheck sellers, LlmJudge judge, VisecaClient viseca, Settings settings) {
         this.policies = policies;
         this.history = history;
+        this.sellers = sellers;
         this.judge = judge;
         this.viseca = viseca;
         this.settings = settings;
@@ -83,6 +85,8 @@ public class CheckService {
             Decision d;
             try {
                 d = decideFor(f, policyId, key, source);
+                // Always on, whatever the policy says: an approval at a lookalike seller becomes a question for the customer.
+                if (!d.reasonCodes().contains("no_active_policy")) d = sellers.apply(f, d);
             } catch (ApiException e) {
                 throw e;
             } catch (RuntimeException e) {
@@ -463,6 +467,12 @@ public class CheckService {
             ObjectNode pol = pols.addObject();
             pol.put("policy_id", pv.id() != null ? pv.id() : "event_mandate");
             pol.put("instruction", pv.instruction());
+            if (c.early() != null && !APPROVED.equals(c.early().state())) {
+                // A hard rule (or a guard) already settled this policy: send it short, so it does not blur the ones still open.
+                pol.put("settled_by_rules", "violated");
+                pol.put("reason", c.early().customerMessage().replaceFirst("^Declined: ", ""));
+                continue;
+            }
             pol.set("hard_rules", Json.MAPPER.valueToTree(pv.rules()));
             pol.set("guidance", Json.MAPPER.valueToTree(pv.guidance()));
             pol.put("uncertainty_policy", pv.uncertainty());
@@ -485,6 +495,8 @@ public class CheckService {
         ArrayNode items = p.putArray("items");
         for (JsonNode i : a.path("items")) copy(i, items.addObject(), "line_no", "item_id", "item_name", "item_category", "quantity", "unit_price", "currency");
 
+        SellerCheck.Result seller = sellers.assess(f);
+        if (seller != null) in.set("seller_check", seller.context());
         in.set("derived_signals", view.path("session"));
         in.set("platform_recent_authorizations", f.event().path("context").path("recent_authorizations"));
 

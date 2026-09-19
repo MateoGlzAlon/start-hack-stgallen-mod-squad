@@ -1,6 +1,6 @@
 # Example check cases
 
-17 purchases to send to `POST /check` against the five example policies. Each one has an expected outcome, so you can see whether the check works.
+17 purchases to send to `POST /check`, written for the first five example policies (the full set is now 15; `make check-cases` runs 100 cases against all of them). Each one has an expected outcome, so you can see whether the check works.
 
 These were run three times in a row against the real OpenAI model (`gpt-4.1`) with the five policies freshly created each time, and all 17 gave the expected state every time. The wording of the reason changes between runs; the state (`approved`, `denied`, `pending_human`) did not.
 

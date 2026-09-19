@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates every example policy from plans/EXAMPLE_POLICY_CURLS.md through POST /policies (they become active at once).
+# Creates every example policy (all 15) from plans/EXAMPLE_POLICY_CURLS.md through POST /policies (they become active at once).
 # Policies that already exist with the same instruction are skipped, so it is safe to run twice.
 #   scripts/create-example-policies.sh            (or: make example-policies)
 #   API=http://localhost:9090 scripts/create-example-policies.sh

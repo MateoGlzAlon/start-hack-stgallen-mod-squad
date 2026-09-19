@@ -40,12 +40,12 @@ logs: ## Tail logs (all, or one service: make logs s=backend)
 	docker compose logs -f --tail=100 $(s)
 
 status: ## Backend status: keys configured, worker running, counters
-	@curl -fsS http://localhost:$(BACKEND_PORT)/status && echo
+	@curl -fsS http://localhost:$(BACKEND_PORT)/status | jq && echo
 
-example-policies: ## Create the five example policies from plans/EXAMPLE_POLICY_CURLS.md (skips ones that exist)
+example-policies: ## Create the 15 example policies from plans/EXAMPLE_POLICY_CURLS.md (skips ones that exist)
 	@./scripts/create-example-policies.sh
 
-check-cases: ## Send 25 purchases to /check against the example policies and print pass/fail
+check-cases: ## Send 100 purchases to /check against the 15 example policies, with live progress and pass/fail
 	@./scripts/run-check-cases.sh
 
 clean: ## Remove local build outputs
