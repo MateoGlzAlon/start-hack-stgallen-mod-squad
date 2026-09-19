@@ -3,6 +3,7 @@ package com.leash.policy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.leash.Json;
 import com.leash.engine.Fields;
+import com.leash.engine.Fx;
 import com.leash.llm.LlmException;
 import com.leash.llm.OpenAiClient;
 import com.leash.Settings;
@@ -129,16 +130,33 @@ public class PolicyCompiler {
                 - hard_rules: machine-checkable limits. Only use these fields (exact names):
                 %s
                   Operators: < <= = != > >= in not_in. "in"/"not_in" take a string or a list of strings; the others compare numbers.
-                  Amounts must be in CHF (convert other currencies with EUR 0.95, GBP 1.12, USD 0.87 CHF) and the field name must \
-                keep _chf. Use currency "CHF" for money rules. scope: "purchase" for a per-order limit; "period" with period_days for a \
+                  Keep every amount in the currency the customer used and put that currency in "currency" (CHF, EUR, GBP or USD). NEVER convert \
+                an amount yourself: the system converts it exactly (fixed rates to CHF: %s). The field name must keep _chf even for EUR, GBP or USD amounts. scope: "purchase" for a per-order limit; "period" with period_days for a \
                 rolling total across several days (e.g. per 7 days). Set unused optional keys (currency, scope, period_days) to null.
+                  When the customer names the kind of goods ("groceries", "clothing", "electronics"), write an items.item_category rule so \
+                every line of the basket is checked (groceries -> items.item_category in ["groceries"]); when they name the kind of shop \
+                ("a specialist sports retailer" = merchant category sporting_goods), write a merchant.merchant_category rule. Things they \
+                say they never want ("never gift cards") become items.item_category not_in. Do NOT guess a category for a specific product \
+                such as shoes, a monitor or a hat (categories are ambiguous): describe the product in guidance instead. Never invent ids, \
+                names or other values that the customer did not say.
+                - Every requirement in the sentence must end up either as a hard rule or as a guidance line. Never drop one: product type, colour, \
+                size, brand, return terms, "no extras" and session-safety wishes all go into guidance if they are not a rule.
                 - guidance: everything the customer asked for that cannot be written as a rule above (specific product, size, colour, \
-                return terms of at least N days, shop type, no add-ons or extras, "pause if the session looks hijacked", ...). One short, \
-                self-contained sentence each, in the customer's meaning. A judge later checks these against each purchase, so do not drop any.
-                - open_questions: ambiguities the customer should confirm (e.g. "Are trail-running shoes acceptable?"). Empty if none.
+                return terms of at least N days, shop type, no add-ons or extras, "pause if the session looks hijacked", ...). Each line is a \
+                REQUIREMENT stated in the customer's meaning, e.g. "Only black running shoes". NEVER write a question, a request for more \
+                information or a suggestion in guidance, and never add requirements about things the customer did not mention (no size given \
+                means no size requirement). A judge later checks these against each purchase, so do not drop any.
+                - open_questions: real ambiguities the customer should confirm (e.g. "Are trail-running shoes acceptable?"). Usually empty.
                 - uncertainty_policy: what to do when a purchase cannot be verified. "ask" (default; also for "ask me when uncertain"), \
                 "decline" (if they want unclear purchases blocked), "approve" (only if they explicitly say to go ahead when unsure).
 
-                Never invent limits or requirements the customer did not state. Never loosen anything. Enforce exactly what was said.""".formatted(fields);
+                Examples (fields shown as field operator value):
+                "Get me a blue umbrella for max CHF 30, ask me if unsure." ->
+                  hard_rules: [authorization.billing_amount_chf <= 30 CHF purchase]; uncertainty_policy ask; guidance ["Only a blue umbrella"]; open_questions [].
+                "Order pasta and milk from a shop I know, at most 50 francs per week, decline anything odd." ->
+                  hard_rules: [authorization.billing_amount_chf <= 50 CHF period 7 days, merchant.familiar = "true", items.item_category in ["groceries"]]; \
+                uncertainty_policy decline; guidance ["Only pasta and milk"]; open_questions [].
+
+                Never invent limits or requirements the customer did not state. Never loosen anything. Enforce exactly what was said.""".formatted(fields, Fx.describe());
     }
 }

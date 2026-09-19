@@ -20,7 +20,6 @@ public final class Fields {
         ALLOWED.put("authorization.fulfillment_method", "string, e.g. delivery | pickup");
         ALLOWED.put("authorization.order_returnable", "string: \"true\" | \"false\" | \"unknown\" | \"not_applicable\"");
         ALLOWED.put("authorization.order_cancellable", "string: \"true\" | \"false\" | \"unknown\" | \"not_applicable\"");
-        ALLOWED.put("merchant.merchant_id", "string, e.g. ME0001");
         ALLOWED.put("merchant.merchant_category",
                 "string: books | clothing | dining | electronics | entertainment | food_delivery | fuel | groceries | health | "
                         + "home_improvement | hotel | household | kids_family | pet_care | photography | software | sporting_goods | "
@@ -31,7 +30,6 @@ public final class Fields {
         ALLOWED.put("items.item_category",
                 "string, checked for EVERY cart line: books | clothing | cosmetics | dining | electronics | food_delivery | fuel | "
                         + "gift_card | groceries | home_improvement | household | hotel | membership | sporting_goods | subscriptions | transport");
-        ALLOWED.put("items.item_id", "string, checked for EVERY cart line");
         ALLOWED.put("items.quantity", "number, checked for EVERY cart line");
     }
 

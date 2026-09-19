@@ -29,6 +29,9 @@ public class HistoryIndex {
     private final Map<String, Integer> merchants = new HashMap<>();
     private final Map<String, Integer> devices = new HashMap<>();
     private final Map<String, Integer> countries = new HashMap<>();
+    /** Whole-platform view of a shop: approved purchases and distinct cards, over every card in the file. */
+    private final Map<String, Integer> shopPurchases = new HashMap<>();
+    private final Map<String, Set<String>> shopCards = new HashMap<>();
     private int rows;
 
     public HistoryIndex(Settings settings) {
@@ -44,6 +47,8 @@ public class HistoryIndex {
                 String card = rec.get("card_id");
                 cards.add(card);
                 merchants.merge(card + "|" + rec.get("merchant_id"), 1, Integer::sum);
+                shopPurchases.merge(rec.get("merchant_id"), 1, Integer::sum);
+                shopCards.computeIfAbsent(rec.get("merchant_id"), k -> new HashSet<>()).add(card);
                 countries.merge(card + "|" + rec.get("merchant_country"), 1, Integer::sum);
                 String device = rec.get("customer_device_id");
                 if (!device.isBlank()) devices.merge(card + "|" + device, 1, Integer::sum);
@@ -53,12 +58,20 @@ public class HistoryIndex {
         } catch (IOException | RuntimeException e) {
             log.warn("Could not read history file {} - familiarity facts will be 'unknown'", file, e);
             cards.clear();
+            shopPurchases.clear();
+            shopCards.clear();
         }
     }
 
     public int rows() { return rows; }
 
     public boolean knowsCard(String cardId) { return cards.contains(cardId); }
+
+    /** Approved purchases at this shop over all cards in the history (0 = nobody on the platform has bought there). */
+    public int shopPurchases(String merchantId) { return shopPurchases.getOrDefault(merchantId, 0); }
+
+    /** Distinct cards that bought at this shop. */
+    public int shopCards(String merchantId) { return shopCards.getOrDefault(merchantId, Set.of()).size(); }
 
     public int merchantCount(String cardId, String merchantId) { return merchants.getOrDefault(cardId + "|" + merchantId, 0); }
 

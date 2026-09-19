@@ -27,7 +27,7 @@ public class RunService {
         if (scenarioId == null || scenarioId.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "scenario_id is required");
         if (!viseca.configured()) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "TEAM_API_KEY is not set");
         Policy p = policies.require(policyId);
-        if (!"active".equals(p.status)) throw new ApiException(HttpStatus.CONFLICT, "Policy is " + p.status + "; confirm it before starting a run");
+        if (!"active".equals(p.status)) throw new ApiException(HttpStatus.CONFLICT, "Policy is " + p.status + "; only an active policy can start a run");
         try {
             String mandateId = policies.ensureMandate(p);
             JsonNode run = viseca.startRun(scenarioId, mandateId);

@@ -29,7 +29,13 @@ public class PolicyStore {
         this.file = settings.storeDir.resolve("policies.json");
         if (Files.exists(file)) {
             try {
-                for (Policy p : Json.MAPPER.readValue(file.toFile(), new TypeReference<List<Policy>>() {})) policies.put(p.id, p);
+                for (Policy p : Json.MAPPER.readValue(file.toFile(), new TypeReference<List<Policy>>() {})) {
+                    if ("draft".equals(p.status)) {          // the draft step no longer exists
+                        p.status = "active";
+                        log.info("Policy {} was a draft, now active", p.id);
+                    }
+                    policies.put(p.id, p);
+                }
                 log.info("Loaded {} policies from {}", policies.size(), file.toAbsolutePath());
             } catch (IOException e) {
                 log.error("Could not read {} - starting empty", file, e);

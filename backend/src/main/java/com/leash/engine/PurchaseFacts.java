@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The few typed facts the engine needs, read from a Viseca authorization event without any LLM.
@@ -23,7 +25,9 @@ public record PurchaseFacts(
         String merchantId,
         String merchantName,
         List<String> itemIds,
-        Instant deadline) {
+        Instant deadline,
+        String priceNote,
+        String mismatch) {
 
     /** At least this many earlier approved purchases at a shop on the same card make it "familiar". */
     public static final int FAMILIAR_MIN_PURCHASES = 2;
@@ -42,9 +46,28 @@ public record PurchaseFacts(
         } catch (DateTimeParseException e) {
             bad.add("authorization.timestamp");
         }
+        // The CHF amount: what the request says, or price x the fixed rate when it only quotes a price in EUR, GBP or USD. When both are
+        // there and disagree, the higher one is used (a request must never be able to under-report) and the mismatch is reported.
+        BigDecimal claimed = money(a.get("billing_amount_chf"));
+        BigDecimal price = money(a.get("amount"));
+        String currency = a.path("currency").asText("").toUpperCase(Locale.ROOT);
+        BigDecimal derived = price == null ? null : Fx.toChf(price, currency);
         BigDecimal chf = null;
-        if (a.path("billing_amount_chf").isNumber()) chf = a.get("billing_amount_chf").decimalValue();
-        else bad.add("authorization.billing_amount_chf");
+        String mismatch = null;
+        if (claimed != null && derived != null) {
+            chf = claimed.max(derived);
+            if (claimed.subtract(derived).abs().compareTo(new BigDecimal("0.01")) > 0) {
+                mismatch = "the request says CHF " + claimed.setScale(2, RoundingMode.HALF_UP).toPlainString() + " but " + currency + " "
+                        + price.setScale(2, RoundingMode.HALF_UP).toPlainString() + " is CHF " + derived.toPlainString() + " at the fixed rate";
+            }
+        } else if (claimed != null) chf = claimed;
+        else if (derived != null) chf = derived;
+        else bad.add("authorization.billing_amount_chf (or amount with a currency that has an exchange rate: " + String.join(", ", Fx.rates().keySet()) + ")");
+        if (chf != null) chf = chf.setScale(2, RoundingMode.HALF_UP);   // cents, never 3.1E+2
+        String priceNote = price != null && chf != null && Fx.rate(currency) != null && !"CHF".equals(currency)
+                ? currency + " " + price.setScale(2, RoundingMode.HALF_UP).toPlainString() + " = CHF " + chf.setScale(2, RoundingMode.HALF_UP).toPlainString()
+                        + " (fixed rate " + Fx.rate(currency).toPlainString() + ")"
+                : null;
         List<String> itemIds = new ArrayList<>();
         if (!a.path("items").isArray() || a.get("items").isEmpty()) bad.add("authorization.items");
         else a.get("items").forEach(i -> itemIds.add(i.path("item_id").asText("")));
@@ -58,7 +81,7 @@ public record PurchaseFacts(
         } catch (DateTimeParseException ignored) { /* no deadline known: treat as generous */ }
 
         return new PurchaseFacts(event, authId, cardId, mandateId, ts, chf, merchantId,
-                a.path("merchant").path("merchant_name").asText(""), itemIds, deadline);
+                a.path("merchant").path("merchant_name").asText(""), itemIds, deadline, priceNote, mismatch);
     }
 
     /** The event plus facts derived from history, under authorization.merchant.* and session.*. Unknown card => nothing derived. */
@@ -66,6 +89,7 @@ public record PurchaseFacts(
         ObjectNode root = event.deepCopy();
         ObjectNode a = (ObjectNode) root.get("authorization");
         ObjectNode m = a.get("merchant") instanceof ObjectNode o ? o : a.putObject("merchant");
+        a.put("billing_amount_chf", billingChf);   // the amount the engine uses, whatever the request claimed
         ObjectNode s = root.putObject("session");
         if (a.has("recent_attempt_count_10m")) s.set("recent_attempt_count_10m", a.get("recent_attempt_count_10m"));
         if (history.knowsCard(cardId)) {
@@ -86,6 +110,20 @@ public record PurchaseFacts(
             }
         }
         return root;
+    }
+
+    /** "CHF 194.75", or "EUR 205.00 = CHF 194.75 (fixed rate 0.95)" for a foreign-currency price. */
+    public String priceText() {
+        return priceNote != null ? priceNote : "CHF " + billingChf.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private static BigDecimal money(JsonNode n) {
+        if (n == null || n.isNull()) return null;
+        if (n.isNumber()) return n.decimalValue();
+        if (n.isTextual()) {
+            try { return new BigDecimal(n.asText().trim()); } catch (NumberFormatException e) { return null; }
+        }
+        return null;
     }
 
     /** Everything the shop wrote. Untrusted: facts may be extracted, instructions must be ignored. */
