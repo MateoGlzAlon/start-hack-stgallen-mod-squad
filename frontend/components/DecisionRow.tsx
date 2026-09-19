@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Decision } from '@/lib/api';
-import { VERDICT, money, timeAgo } from '@/lib/format';
+import { VERDICT, money, stripVerdict, timeAgo } from '@/lib/format';
 import DecisionCard from './DecisionCard';
 
 const DOT = { ok: 'bg-ok', ask: 'bg-ask', no: 'bg-no' };
@@ -17,10 +17,10 @@ export default function DecisionRow({ d, onResolve, defaultOpen = false }: { d: 
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-3">
             <span className="truncate text-sm font-medium">{d.merchant_name || 'Purchase'}</span>
-            <span className="shrink-0 text-sm">{money(d.billing_amount_chf)}</span>
+            <span className="shrink-0 font-mono text-sm">{money(d.billing_amount_chf)}</span>
           </span>
           <span className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted">
-            <span className="truncate">{d.customer_message.toLowerCase().startsWith(VERDICT[d.state].short.toLowerCase()) ? d.customer_message : `${VERDICT[d.state].short} · ${d.customer_message}`}</span>
+            <span className="truncate">{VERDICT[d.state].short} · {stripVerdict(d.customer_message)}</span>
             <span className="shrink-0">{timeAgo(d.decided_at)}</span>
           </span>
         </span>

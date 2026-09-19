@@ -90,8 +90,8 @@ export default function PoliciesPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-2xl font-semibold tracking-tight">What may your agent buy?</h1>
-        <p className="mt-1 text-sm text-muted">Say it in your own words. I turn it into rules, show you what I understood, and check every purchase against it.</p>
+        <h1 className="h-page">What may your agent buy?</h1>
+        <p className="mt-1 text-sm text-muted">Say it in your own words. WatchCat turns it into rules and checks every purchase against them.</p>
 
         <div className="card mt-4 p-4">
           <label htmlFor="instruction" className="sr-only">Instruction</label>
@@ -108,17 +108,17 @@ export default function PoliciesPage() {
               {busy === 'check' ? 'Checking…' : busy === 'create' ? 'Understanding…' : 'Create policy'}
             </button>
           </div>
-          {err && <p className="mt-3 text-sm text-no">{err}</p>}
+          {err && <p className="note-no mt-3">{err}</p>}
         </div>
 
         {ask && (
-          <div className="card mt-4 space-y-5 border-accent/40 p-4 sm:p-5">
+          <div className="card mt-4 space-y-5 border-accent p-4 sm:p-5">
             <div>
-              <h2 className="text-lg font-semibold">{ask.round === 1 ? 'A few details first' : 'A few more details'}</h2>
+              <h2 className="h-section">{ask.round === 1 ? 'A few details first' : 'A few more details'}</h2>
               <p className="mt-1 text-sm text-muted">
                 {ask.round === 1
-                  ? 'Your instruction is a bit open, so I can\u2019t make exact rules from it yet. Answer what you can.'
-                  : 'Thanks. To make exact rules I still need these.'}
+                  ? 'Too open to enforce yet. Answer what you can.'
+                  : 'Thanks. Still missing:'}
               </p>
               {ask.round > 1 && <p className="mt-2 rounded-lg bg-fg/5 px-3 py-2 text-xs text-muted">So far: {ask.base}</p>}
             </div>
@@ -148,12 +148,12 @@ export default function PoliciesPage() {
 
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Active policies</h2>
+          <h2 className="h-section">Active policies</h2>
           <span className="text-sm text-muted">{policies ? active.length : ''}</span>
         </div>
         {policies === null && !err && <p className="text-sm text-muted">Loading…</p>}
         {policies !== null && active.length === 0 && (
-          <div className="card p-6 text-center text-sm text-muted">No policy yet, so your agent may not buy anything. Create one above.</div>
+          <div className="card p-6 text-center text-sm text-muted">No policy yet. Your agent may not buy anything. Create one above.</div>
         )}
         {sorted.map((p) => (
           <PolicyCard

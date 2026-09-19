@@ -2,22 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import type { Decision, Policy } from '@/lib/api';
-import { VERDICT, describeRule, money, timeAgo } from '@/lib/format';
+import { VERDICT, describeRule, money, stripVerdict, timeAgo } from '@/lib/format';
 import { byRelevance, describeEvidence, explainCheck, humanize, policyName, type Line } from '@/lib/evidence';
 import { getPolicies } from '@/lib/policyNames';
 import { Check, Cross, Question } from './icons';
 
+// verdicts are flat solid pills in the three signal colours, with ink text
 const TONE = {
-  ok: { text: 'text-ok', bg: 'bg-ok/12', border: 'border-ok/30' },
-  ask: { text: 'text-ask', bg: 'bg-ask/12', border: 'border-ask/30' },
-  no: { text: 'text-no', bg: 'bg-no/12', border: 'border-no/30' },
+  ok: { pill: 'bg-ok', border: 'border-l-ok' },
+  ask: { pill: 'bg-ask', border: 'border-l-ask' },
+  no: { pill: 'bg-no', border: 'border-l-no' },
 };
 
 const LINE_TONE: Record<Line['tone'], string> = {
-  ok: 'bg-ok/12 text-ok',
-  no: 'bg-no/12 text-no',
-  ask: 'bg-ask/12 text-ask',
-  muted: 'bg-fg/6 text-muted',
+  ok: 'bg-ok text-on-accent',
+  no: 'bg-no text-on-accent',
+  ask: 'bg-ask text-on-accent',
+  muted: 'bg-fg/8 text-muted',
 };
 
 export function VerdictBadge({ state }: { state: Decision['state'] }) {
@@ -25,7 +26,7 @@ export function VerdictBadge({ state }: { state: Decision['state'] }) {
   const t = TONE[v.tone];
   const Icon = v.tone === 'ok' ? Check : v.tone === 'no' ? Cross : Question;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${t.bg} ${t.text}`}>
+    <span className={`label-caps inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-on-accent ${t.pill}`}>
       <Icon width={16} height={16} />
       {v.label}
     </span>
@@ -93,11 +94,11 @@ export default function DecisionCard({
           <VerdictBadge state={d.state} />
           <span className="text-sm text-muted">
             {d.merchant_name ? `${d.merchant_name} · ` : ''}
-            <span className="font-medium text-fg">{money(d.billing_amount_chf)}</span>
+            <span className="font-mono font-medium text-fg">{money(d.billing_amount_chf)}</span>
           </span>
         </div>
 
-        <p className="text-[15px] leading-relaxed">{d.customer_message}</p>
+        <p className="text-[15px] leading-relaxed">{stripVerdict(d.customer_message)}</p>
 
         {d.reason_codes.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -117,7 +118,7 @@ export default function DecisionCard({
             </button>
           </div>
         )}
-        {err && <p className="text-sm text-no">{err}</p>}
+        {err && <p className="note-no">{err}</p>}
       </div>
 
       <details className="group border-t border-line" open={defaultOpen}>
@@ -128,7 +129,7 @@ export default function DecisionCard({
         <div className="space-y-4 px-4 pb-4">
           {d.checks.length > 0 && (
             <section>
-              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Your rules</h4>
+              <h4 className="label-caps mb-1 text-xs text-muted">Your rules</h4>
               <ul className="divide-y divide-line">
                 {d.checks.map((c, i) => (
                   <li key={i} className="flex gap-3 py-2 text-sm">
@@ -144,7 +145,7 @@ export default function DecisionCard({
           )}
           {looked.length > 0 && (
             <section>
-              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">What I looked at</h4>
+              <h4 className="label-caps mb-1 text-xs text-muted">What WatchCat checked</h4>
               <ul className="divide-y divide-line">
                 {looked.map((line, i) => <EvidenceRow key={i} line={line} />)}
               </ul>

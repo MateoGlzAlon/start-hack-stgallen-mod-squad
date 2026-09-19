@@ -51,7 +51,7 @@ export default function LoadScenarios() {
         </button>
       </div>
       {note && (
-        <p role="status" className={`rounded-xl border px-3 py-2 text-sm ${note.tone === 'ok' ? 'border-ok/30 bg-ok/10 text-ok' : 'border-no/30 bg-no/10 text-no'}`}>{note.text}</p>
+        <p role="status" className={note.tone === 'ok' ? 'note-ok' : 'note-no'}>{note.text}</p>
       )}
     </div>
   );

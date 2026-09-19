@@ -44,8 +44,8 @@ export function describeRule(r: Rule): string {
 
 export const VERDICT: Record<State, { label: string; short: string; tone: 'ok' | 'ask' | 'no' }> = {
   approved: { label: 'Approved', short: 'Approved', tone: 'ok' },
-  denied: { label: 'Declined', short: 'Declined', tone: 'no' },
-  pending_human: { label: 'Needs your OK', short: 'Asked', tone: 'ask' },
+  denied: { label: 'Blocked', short: 'Blocked', tone: 'no' },
+  pending_human: { label: 'Needs your review', short: 'Needs review', tone: 'ask' },
 };
 
 export function timeAgo(iso: string): string {
@@ -58,3 +58,10 @@ export function timeAgo(iso: string): string {
 }
 
 export const UNSURE: Record<string, string> = { ask: 'Ask me', decline: 'Decline', approve: 'Approve' };
+
+/** The brand voice: verdict first, then the reason ("Blocked — Order total is 459.00, needs at most CHF 400.00."). */
+export const stripVerdict = (msg: string) => {
+  const m = voice(msg).replace(/^(Approved|Blocked|Needs your review)\s*[:.,\u2014-]\s*/i, '');
+  return m.charAt(0).toUpperCase() + m.slice(1);
+};
+export const voice = (msg: string) => msg.replace(/^Declined[:,]?\s+/i, 'Blocked \u2014 ');

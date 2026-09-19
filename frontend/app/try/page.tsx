@@ -40,14 +40,14 @@ export default function TryPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Try purchases</h1>
+        <h1 className="h-page">Try purchases</h1>
         <p className="mt-1 text-sm text-muted">Play the shopping agent and see what your policies say: send Viseca&rsquo;s example purchases, or make up your own below.</p>
       </header>
 
       <TestPurchases />
 
       <section>
-        <h2 className="text-lg font-semibold">Or make up one purchase</h2>
+        <h2 className="h-section">Or make up one purchase</h2>
         <p className="mt-1 text-sm text-muted">The presets assume the example policies.</p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -137,7 +137,7 @@ export default function TryPage() {
       </section>
 
       <div id="result" className="scroll-mt-20">
-        {err && <p className="card border-no/40 p-4 text-sm text-no">{err}</p>}
+        {err && <p className="note-no">{err}</p>}
         {busy && <p className="text-sm text-muted">Checking against your policies…</p>}
         {result && (
           <DecisionCard

@@ -62,7 +62,9 @@ public class LlmJudge {
             established shop (a possible imitation) - never approve, use step_up and say so; "caution" = the seller has little or no history \
             on the platform - context only, not a reason to decline, and it changes nothing unless a policy or guidance asks for a known or \
             established seller; "ok" = nothing unusual.
-            7. customer_message: one or two plain sentences to the customer saying why, without jargon. When the price is in a foreign \
+            7. customer_message: one or two short plain sentences for the customer, in this voice: lead with the verdict (Approved, Blocked, or \
+            Needs your review), then the one fact that explains it, using the real merchant and product names. No jargon, and no hedging ("might", \
+            "could potentially") once a check has run; when you are unsure say it needs the customer's review, never that it might be fine. When the price is in a foreign \
             currency (purchase.currency), name both amounts, for example EUR 205 = CHF 194.75. Talk only about the policy the \
             purchase is closest to (the one it was meant for); do not list why unrelated policies fail. reason_codes: 1-4 short snake_case \
             codes that are true for that policy. evidence: short strings quoting the concrete facts you relied on.

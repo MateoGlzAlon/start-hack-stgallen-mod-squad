@@ -16,7 +16,7 @@ public class OpenApiConfig {
     @Bean
     OpenAPI openApi() {
         return new OpenAPI()
-                .info(new Info().title("Agent on a Leash - wallet control API").version("0.1.0").description("""
+                .info(new Info().title("WatchCat API - wallet control for AI shopping agents").version("0.1.0").description("""
                         The customer-facing API of the wallet control layer. Typical flow:
                         **1.** `POST /policies` turns a sentence into an active policy (no draft or confirm step), \
                         **2.** purchases are decided by `POST /check` (all active policies and the purchase go to OpenAI), or automatically by the Viseca worker after `POST /runs`, \

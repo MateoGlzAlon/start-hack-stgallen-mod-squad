@@ -31,31 +31,31 @@ export default function PolicyCard({
   }
 
   return (
-    <article className={`card p-4 sm:p-5 ${highlight ? 'ring-2 ring-accent/40' : ''} ${revoked ? 'opacity-60' : ''}`}>
-      {highlight && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-accent">Here is what I understood</p>}
+    <article className={`card p-4 sm:p-5 ${highlight ? 'border-accent' : ''} ${revoked ? 'opacity-60' : ''}`}>
+      {highlight && <p className="label-caps mb-2 text-xs text-accent-text">What WatchCat understood</p>}
       <p className="text-[15px] font-medium leading-snug">&ldquo;{p.instruction}&rdquo;</p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <section>
-          <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Checked exactly</h4>
+          <h4 className="label-caps mb-1.5 text-xs text-muted">Checked exactly</h4>
           {p.hard_rules.length === 0 ? (
             <p className="text-sm text-muted">No hard limits</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
               {p.hard_rules.map((r, i) => (
-                <li key={i} className="flex gap-2"><span className="text-ok">•</span><span>{describeRule(r)}</span></li>
+                <li key={i} className="flex gap-2"><span className="text-accent-text">•</span><span>{describeRule(r)}</span></li>
               ))}
             </ul>
           )}
         </section>
         <section>
-          <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Judged by AI</h4>
+          <h4 className="label-caps mb-1.5 text-xs text-muted">Judged by AI</h4>
           {p.guidance.length === 0 ? (
             <p className="text-sm text-muted">Nothing extra</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
               {p.guidance.map((g, i) => (
-                <li key={i} className="flex gap-2"><span className="text-accent">•</span><span>{g}</span></li>
+                <li key={i} className="flex gap-2"><span className="text-faint">•</span><span>{g}</span></li>
               ))}
             </ul>
           )}
@@ -63,7 +63,7 @@ export default function PolicyCard({
       </div>
 
       {p.open_questions.length > 0 && (
-        <p className="mt-3 rounded-lg bg-ask/10 px-3 py-2 text-sm text-ask">Not sure about: {p.open_questions.join(' · ')}</p>
+        <p className="note-ask mt-3">Still unclear: {p.open_questions.join(' \u00b7 ')}</p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -83,7 +83,7 @@ export default function PolicyCard({
           </div>
         )}
       </div>
-      {err && <p className="mt-2 text-sm text-no">{err}</p>}
+      {err && <p className="note-no mt-2">{err}</p>}
     </article>
   );
 }

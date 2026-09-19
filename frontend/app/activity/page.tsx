@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Decision, type State } from '@/lib/api';
 import DecisionCard from '@/components/DecisionCard';
-import { VERDICT, money, timeAgo } from '@/lib/format';
+import { VERDICT, money, stripVerdict, timeAgo } from '@/lib/format';
 
 const FILTERS: { key: 'all' | State; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'approved', label: 'Approved' },
-  { key: 'denied', label: 'Declined' },
-  { key: 'pending_human', label: 'Asked' },
+  { key: 'denied', label: 'Blocked' },
+  { key: 'pending_human', label: 'Needs review' },
 ];
 
 const DOT = { ok: 'bg-ok', ask: 'bg-ask', no: 'bg-no' };
@@ -32,7 +32,7 @@ export default function ActivityPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
+        <h1 className="h-page">Activity</h1>
         <p className="mt-1 text-sm text-muted">Every purchase your agent proposed, with the reasons.</p>
       </header>
 
@@ -45,7 +45,7 @@ export default function ActivityPage() {
         ))}
       </div>
 
-      {err && <p className="text-sm text-no">{err}</p>}
+      {err && <p className="note-no">{err}</p>}
       {items === null && !err && <p className="text-sm text-muted">Loading…</p>}
       {items !== null && shown.length === 0 && <div className="card p-8 text-center text-sm text-muted">Nothing here yet. Try a purchase first.</div>}
 
@@ -63,10 +63,10 @@ export default function ActivityPage() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="truncate text-sm font-medium">{d.merchant_name || 'Purchase'}</span>
-                    <span className="shrink-0 text-sm">{money(d.billing_amount_chf)}</span>
+                    <span className="shrink-0 font-mono text-sm">{money(d.billing_amount_chf)}</span>
                   </span>
                   <span className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted">
-                    <span className="truncate">{VERDICT[d.state].short} · {d.customer_message}</span>
+                    <span className="truncate">{VERDICT[d.state].short} · {stripVerdict(d.customer_message)}</span>
                     <span className="shrink-0">{timeAgo(d.decided_at)}</span>
                   </span>
                 </span>

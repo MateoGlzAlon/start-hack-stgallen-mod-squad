@@ -18,15 +18,15 @@ export default function InboxPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Waiting for you</h1>
-        <p className="mt-1 text-sm text-muted">Purchases I paused because I could not be sure. Nothing is bought until you say yes.</p>
+        <h1 className="h-page">Needs your review</h1>
+        <p className="mt-1 text-sm text-muted">Purchases WatchCat could not verify. Nothing is bought until you say yes.</p>
       </header>
 
-      {err && <p className="text-sm text-no">{err}</p>}
+      {err && <p className="note-no">{err}</p>}
       {items === null && !err && <p className="text-sm text-muted">Loading…</p>}
       {items !== null && items.length === 0 && (
         <div className="card p-8 text-center">
-          <p className="font-medium">All clear</p>
+          <p className="font-display text-lg font-semibold">All clear</p>
           <p className="mt-1 text-sm text-muted">Nothing is waiting for your decision.</p>
         </div>
       )}

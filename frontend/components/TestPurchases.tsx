@@ -58,7 +58,7 @@ export default function TestPurchases() {
   return (
     <section className="card space-y-4 p-4 sm:p-5">
       <div>
-        <h2 className="text-lg font-semibold">Test your policies with example purchases</h2>
+        <h2 className="h-section">Test your policies with example purchases</h2>
         <p className="mt-1 text-sm text-muted">
           Pick a scenario. Its example purchase attempts (the ones Viseca&rsquo;s sandbox replays) are sent to the engine one by one, like a shopping agent would.
         </p>
@@ -85,14 +85,14 @@ export default function TestPurchases() {
             : <>No policy was made from this scenario yet (press <b className="font-medium text-fg">Load scenarios</b> above), so every active policy is tried instead.</>}
         </p>
       )}
-      {err && <p className="text-sm text-no">{err}</p>}
+      {err && <p className="note-no">{err}</p>}
 
       {(progress || results.length > 0) && (
         <div className="space-y-3">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-            <span><b className="text-ok">{count('approved')}</b> approved</span>
-            <span><b className="text-no">{count('denied')}</b> declined</span>
-            <span><b className="text-ask">{count('pending_human')}</b> asked</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ok" /><b className="font-mono font-medium text-fg">{count('approved')}</b> approved</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-no" /><b className="font-mono font-medium text-fg">{count('denied')}</b> blocked</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ask" /><b className="font-mono font-medium text-fg">{count('pending_human')}</b> need review</span>
             {progress && progress.done < progress.total && <span>{progress.total - progress.done} to go</span>}
           </div>
           <ul className="space-y-2">

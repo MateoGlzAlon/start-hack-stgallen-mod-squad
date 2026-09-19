@@ -19,7 +19,7 @@ export function policyName(p?: Policy): string | null {
 }
 
 // what decided the outcome first, the noise about unrelated policies last
-const ORDER: Record<string, number> = { Fits: 0, 'Not sure': 1, 'Shop text': 2, Price: 3, Seller: 4, 'Doesn’t fit': 5, You: 6 };
+const ORDER: Record<string, number> = { Fits: 0, 'Unverified': 1, 'Shop text': 2, Price: 3, Seller: 4, 'Doesn’t fit': 5, You: 6 };
 
 export type Line = { tag: string; tone: 'ok' | 'no' | 'ask' | 'muted'; text: string; sub?: string };
 
@@ -33,7 +33,7 @@ export function describeEvidence(e: Evidence, nameOf: (id: string) => string | n
     if (m) {
       const name = nameOf(m[1]);
       const who = name ? `“${name}”` : 'One of your policies';
-      const tag = m[2] === 'satisfied' ? 'Fits' : m[2] === 'violated' ? 'Doesn’t fit' : 'Not sure';
+      const tag = m[2] === 'satisfied' ? 'Fits' : m[2] === 'violated' ? 'Doesn’t fit' : 'Unverified';
       return { tag, tone: m[2] === 'satisfied' ? 'ok' : m[2] === 'violated' ? 'no' : 'ask', text: who, sub: m[3] };
     }
     return { tag: 'AI', tone: 'muted', text: e.fact };
@@ -96,19 +96,20 @@ export function explainCheck(c: Check): string {
     case 'merchant.familiar':
       return actual === 'true' ? 'You have bought here before.' : 'You haven’t bought here before.';
     case 'order_returnable':
-      return actual === 'true' ? 'The order can be returned.' : 'The order can’t be returned.';
+      return actual === 'true' ? 'Confirmed: returns are allowed.' : 'Returns are not allowed.';
+    // when the rule passed, the title already says it: only add what was actually found
     case 'merchant.merchant_category':
-      return `Shop type: ${nice(unique(actual))}.`;
+      return ok ? `Matches: ${nice(unique(actual))}.` : `This shop: ${nice(unique(actual))}.`;
     case 'merchant.merchant_country':
-      return `The shop is in ${unique(actual)}.`;
+      return ok ? `Matches: ${unique(actual)}.` : `This shop is in ${unique(actual)}.`;
     case 'items.item_category':
-      return `The items are: ${nice(unique(actual))}.`;
+      return ok ? `Matches: ${nice(unique(actual))}.` : `The items are: ${nice(unique(actual))}.`;
     case 'items.quantity':
-      return `Quantity: ${unique(actual)}.`;
+      return ok ? `Matches: ${unique(actual)}.` : `Quantity: ${unique(actual)}.`;
     case 'fulfillment_method':
-      return `Delivery: ${nice(unique(actual))}.`;
+      return ok ? `Matches: ${nice(unique(actual))}.` : `Delivery: ${nice(unique(actual))}.`;
     case 'channel':
-      return `Channel: ${nice(unique(actual))}.`;
+      return ok ? `Matches: ${nice(unique(actual))}.` : `Channel: ${nice(unique(actual))}.`;
     case 'recent_attempt_count_10m':
       return `${plural(Number(actual), 'attempt', 'attempts')} in the last 10 minutes.`;
     default:
