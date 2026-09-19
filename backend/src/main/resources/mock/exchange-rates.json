@@ -1,0 +1,12 @@
+{
+  "provider": "MOCK of the Frankfurter exchange rate API (ECB reference rates), not live data",
+  "mock": true,
+  "note": "Loaded at startup like an API response. The values equal the fixed rates of the Viseca data pack (fx_rates.csv), because Viseca computes billing_amount_chf with them. Edit and restart to change them, or point FX_RATES_FILE at another file.",
+  "date": "2026-08-01",
+  "base": "CHF",
+  "rates_to_chf": {
+    "EUR": 0.95,
+    "GBP": 1.12,
+    "USD": 0.87
+  }
+}

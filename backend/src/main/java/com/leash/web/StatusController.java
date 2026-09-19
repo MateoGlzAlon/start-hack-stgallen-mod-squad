@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.leash.Json;
 import com.leash.Settings;
 import com.leash.engine.CheckService;
+import com.leash.engine.Fx;
 import com.leash.engine.HistoryIndex;
 import com.leash.llm.OpenAiClient;
 import com.leash.policy.PolicyStore;
@@ -47,6 +48,10 @@ public class StatusController {
         v.put("purchases_answered", worker.handled());
         if (worker.lastPurchaseAt() != null) v.put("last_purchase_at", worker.lastPurchaseAt().toString());
         n.putObject("history").put("loaded", history.rows() > 0).put("approved_purchases", history.rows());
+        ObjectNode fx = n.putObject("fx");
+        fx.put("source", Fx.source());
+        ObjectNode toChf = fx.putObject("to_chf");
+        Fx.rates().forEach((c, r) -> toChf.put(c, r));
         n.put("policies", policies.all().size());
         n.put("decisions", checks.list(null, null).size());
         return n;

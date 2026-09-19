@@ -42,6 +42,11 @@ public class VisecaClient {
         return !settings.visecaApiKey.isBlank();
     }
 
+    /** Small catalogues incl. the fixed currency rates (read once at startup). */
+    public JsonNode referenceData() {
+        return call("GET", "/v1/reference-data", null, Duration.ofSeconds(4)).orElseThrow();
+    }
+
     // ---- mandates ----
 
     public JsonNode createMandateDraft(Policy p) {
