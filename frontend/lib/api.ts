@@ -87,6 +87,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   status: () => req<Status>('/status'),
   policies: () => req<Policy[]>('/policies'),
+  clarify: (instruction: string) =>
+    req<{ ready: boolean; questions: { question: string; why: string; choices: string[] }[] }>('/policies/clarify', { method: 'POST', body: JSON.stringify({ instruction }) }),
   createPolicy: (instruction: string) => req<Policy>('/policies', { method: 'POST', body: JSON.stringify({ instruction }) }),
   revokePolicy: (id: string) => req<Policy>(`/policies/${id}`, { method: 'DELETE' }),
   // tighten only: every existing rule is sent back unchanged, and "when unsure" moves to decline

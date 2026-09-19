@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Decision, type Policy, type Scenario } from '@/lib/api';
 import DecisionRow from './DecisionRow';
+import LoadScenarios from './LoadScenarios';
 
 /** Sends a scenario's example purchase attempts (from the data pack) to the engine, one by one, like a shopping agent would. */
 export default function TestPurchases() {
@@ -63,15 +64,17 @@ export default function TestPurchases() {
         </p>
       </div>
 
+      <LoadScenarios />
+
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
           <label className="label" htmlFor="scenario">Scenario</label>
           <select id="scenario" className="field" value={sel} onChange={(e) => { setSel(e.target.value); setResults([]); setProgress(null); }} disabled={running}>
-            {scenarios.map((s) => <option key={s.scenario_id} value={s.scenario_id}>{s.scenario_name} ({s.event_count} purchases)</option>)}
+            {scenarios.map((s) => <option key={s.scenario_id} value={s.scenario_id}>{s.scenario_name} ({s.event_count} {s.event_count === 1 ? 'purchase' : 'purchases'})</option>)}
           </select>
         </div>
         <button className="btn-primary w-full sm:w-auto" onClick={run} disabled={running || !sel}>
-          {running ? `Testing ${progress?.done ?? 0}/${progress?.total ?? '…'}` : `Test with ${scenario?.event_count ?? ''} example purchases`}
+          {running ? `Testing ${progress?.done ?? 0}/${progress?.total ?? '…'}` : `Test with ${scenario?.event_count ?? ''} example ${scenario?.event_count === 1 ? 'purchase' : 'purchases'}`}
         </button>
       </div>
 
@@ -79,7 +82,7 @@ export default function TestPurchases() {
         <p className="text-sm text-muted">
           {policy
             ? <>Checked against the policy made from &ldquo;{scenario.cardholder_instruction}&rdquo;</>
-            : <>No policy was made from this scenario yet (press <b className="font-medium text-fg">Load scenarios</b> at the top), so every active policy is tried instead.</>}
+            : <>No policy was made from this scenario yet (press <b className="font-medium text-fg">Load scenarios</b> above), so every active policy is tried instead.</>}
         </p>
       )}
       {err && <p className="text-sm text-no">{err}</p>}

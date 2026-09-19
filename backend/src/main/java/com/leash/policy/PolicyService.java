@@ -25,12 +25,25 @@ public class PolicyService {
 
     private final PolicyStore store;
     private final PolicyCompiler compiler;
+    private final PolicyClarifier clarifier;
     private final VisecaClient viseca;
 
-    public PolicyService(PolicyStore store, PolicyCompiler compiler, VisecaClient viseca) {
+    public PolicyService(PolicyStore store, PolicyCompiler compiler, PolicyClarifier clarifier, VisecaClient viseca) {
         this.store = store;
         this.compiler = compiler;
+        this.clarifier = clarifier;
         this.viseca = viseca;
+    }
+
+    /** Is the sentence specific enough to enforce? If not, what to ask the customer (nothing is stored). */
+    public PolicyClarifier.Result clarify(String instruction) {
+        if (instruction == null || instruction.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, "instruction is required");
+        if (instruction.length() > 2000) throw new ApiException(HttpStatus.BAD_REQUEST, "instruction is too long (max 2000 chars)");
+        try {
+            return clarifier.clarify(instruction);
+        } catch (LlmException e) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Policy compiler unavailable: " + e.getMessage());
+        }
     }
 
     public Policy create(String instruction) {

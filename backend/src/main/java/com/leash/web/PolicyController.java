@@ -3,6 +3,7 @@ package com.leash.web;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.leash.policy.Policy;
+import com.leash.policy.PolicyClarifier;
 import com.leash.policy.PolicyService;
 import com.leash.policy.PolicyStore;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,18 @@ public class PolicyController {
     @ResponseStatus(HttpStatus.CREATED)
     Policy create(@RequestBody JsonNode body) {
         return service.create(body.path("instruction").asText(null));
+    }
+
+    @Operation(summary = "Is the sentence specific enough? If not, what to ask the customer first",
+            description = "Call this before POST /policies when the customer typed the sentence. Returns ready=true for a sentence that says what may be bought and how much "
+                    + "may be spent, otherwise up to 3 plain-language questions (each with a short 'why' and optional quick-answer 'choices'). Nothing is stored. "
+                    + "Add the customer's answers to the sentence and send the result to POST /policies. 503 if the model is unavailable.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = "application/json",
+                    examples = @ExampleObject(value = """
+                            {"instruction": "Buy me some shoes."}"""))))
+    @PostMapping("/clarify")
+    PolicyClarifier.Result clarify(@RequestBody JsonNode body) {
+        return service.clarify(body.path("instruction").asText(null));
     }
 
     @Operation(summary = "List all policies")
