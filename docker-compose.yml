@@ -8,7 +8,10 @@ services:
       VISECA_BASE_URL: ${VISECA_BASE_URL:-https://saw26api.ashyground-364e1d07.switzerlandnorth.azurecontainerapps.io}
       TEAM_API_KEY: ${TEAM_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1}
+      COMPILE_TIMEOUT_MS: ${COMPILE_TIMEOUT_MS:-30000}
+      JUDGE_TIMEOUT_MS: ${JUDGE_TIMEOUT_MS:-15000}
       STORE_DIR: /store
       DATA_DIR: /data
     volumes:
@@ -22,6 +25,30 @@ services:
       timeout: 3s
       retries: 20
       start_period: 10s
+
+  # Local model for `make provision_local`: an OpenAI-compatible API on ollama:11434 (no key needed) that replaces the OpenAI API.
+  # Claude models cannot run locally, so this serves an open model chosen with LOCAL_MODEL.
+  ollama:
+    profiles: ["local"]
+    image: ollama/ollama:latest
+    container_name: leash-ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"        # keep the model in memory between requests
+    volumes:
+      - ollama:/root/.ollama         # downloaded models
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    # GPU (needs the NVIDIA container toolkit): uncomment
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
   frontend:
     profiles: ["ui"]
@@ -38,3 +65,4 @@ services:
 
 volumes:
   store:
+  ollama:
