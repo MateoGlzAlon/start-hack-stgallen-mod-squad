@@ -18,12 +18,12 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info().title("Agent on a Leash - wallet control API").version("0.1.0").description("""
                         The customer-facing API of the wallet control layer. Typical flow:
-                        **1.** `POST /policies` turns a sentence into a draft, **2.** the customer reviews it and `POST /policies/{id}/confirm`s it, \
-                        **3.** purchases are decided by `POST /check` (or automatically by the Viseca worker after `POST /runs`), \
-                        **4.** a `pending_human` decision is answered with `POST /check/{authorization_id}/resolve`.
+                        **1.** `POST /policies` turns a sentence into an active policy (no draft or confirm step), \
+                        **2.** purchases are decided by `POST /check` (all active policies and the purchase go to OpenAI), or automatically by the Viseca worker after `POST /runs`, \
+                        **3.** a `pending_human` decision is answered with `POST /check/{authorization_id}/resolve`, **4.** `PATCH` tightens and `DELETE` revokes a policy.
                         States: `approved` = approve, `denied` = decline, `pending_human` = step_up. Errors are `{"error": {"status", "message"}}`."""))
                 .tags(List.of(
-                        new Tag().name("Policies").description("Create, confirm, tighten and revoke the customer's wallet policy"),
+                        new Tag().name("Policies").description("Create (active at once), tighten and revoke the customer's wallet policy"),
                         new Tag().name("Check").description("Decide a purchase and answer a pending one"),
                         new Tag().name("Runs").description("Start a Viseca scenario run for a policy; the worker answers its purchases"),
                         new Tag().name("Status").description("What is configured and running")));

@@ -26,17 +26,18 @@ public class PolicyController {
         this.store = store;
     }
 
-    /** {"instruction": "..."} -> a draft the customer must review and confirm. */
-    @Operation(summary = "Create a draft policy from a sentence",
-            description = "Sends the instruction to OpenAI and stores the result as a draft: hard_rules (enforced), guidance (judged), "
-                    + "uncertainty_policy and open_questions. Nothing is enforced until the customer confirms. 503 if the model is unavailable.",
+    /** {"instruction": "..."} -> compiled by OpenAI and active immediately. */
+    @Operation(summary = "Create a policy from a sentence (active immediately)",
+            description = "Sends the instruction to OpenAI and stores the result as an ACTIVE policy: hard_rules (enforced exactly), guidance (judged by the model), "
+                    + "uncertainty_policy and open_questions. There is no draft or confirm step. Show the customer what was understood and offer tighten or revoke. "
+                    + "503 if the model is unavailable.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = "application/json",
                     examples = @ExampleObject(value = """
                             {"instruction": "Buy me black running shoes for up to CHF 200. Ask me when uncertain."}"""))))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     Policy create(@RequestBody JsonNode body) {
-        return service.createDraft(body.path("instruction").asText(null));
+        return service.create(body.path("instruction").asText(null));
     }
 
     @Operation(summary = "List all policies")
@@ -49,19 +50,6 @@ public class PolicyController {
     @GetMapping("/{id}")
     Policy get(@PathVariable String id) {
         return service.require(id);
-    }
-
-    /** Optional body {"confirmed": true}; an explicit false is rejected. */
-    @Operation(summary = "Confirm a draft (draft -> active)",
-            description = "The customer agrees to exactly what the draft shows. Only a draft can be confirmed. The body is optional; an explicit false is rejected.",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = "application/json",
-                    examples = @ExampleObject(value = "{\"confirmed\": true}"))))
-    @PostMapping("/{id}/confirm")
-    Policy confirm(@PathVariable String id, @RequestBody(required = false) JsonNode body) {
-        if (body != null && body.has("confirmed") && !body.get("confirmed").asBoolean()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "confirmed must be true to activate the policy");
-        }
-        return service.confirm(id);
     }
 
     @Operation(summary = "Tighten an active policy",
