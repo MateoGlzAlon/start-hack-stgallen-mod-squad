@@ -8,7 +8,7 @@ One story, three parts, run in order. The customer says **"Buy me black running 
 | 2 | An ambiguous, an unsafe and a manipulated purchase, each getting a useful answer | 3 |
 | 3 | The customer approves one, rejects one, tightens the policy, then revokes it | 5 |
 
-The same flow works in the UI (Try presets, Inbox, Policies). These curls are for showing what happens underneath.
+The same flow works in the UI (the Demo tab with its presets, Inbox, Policies). These curls are for showing what happens underneath.
 
 ## 0. Setup
 

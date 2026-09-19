@@ -129,7 +129,7 @@ export default function DecisionCard({
         <div className="space-y-4 px-4 pb-4">
           {d.checks.length > 0 && (
             <section>
-              <h4 className="label-caps mb-1 text-xs text-muted">Your rules</h4>
+              <h4 className="label-caps mb-1 text-xs text-muted">{d.state === 'denied' ? 'Why it was blocked' : 'Your rules'}</h4>
               <ul className="divide-y divide-line">
                 {d.checks.map((c, i) => (
                   <li key={i} className="flex gap-3 py-2 text-sm">
@@ -145,7 +145,7 @@ export default function DecisionCard({
           )}
           {looked.length > 0 && (
             <section>
-              <h4 className="label-caps mb-1 text-xs text-muted">What WatchCat checked</h4>
+              <h4 className="label-caps mb-1 text-xs text-muted">{d.state === 'denied' ? 'Also noted' : 'What WatchCat checked'}</h4>
               <ul className="divide-y divide-line">
                 {looked.map((line, i) => <EvidenceRow key={i} line={line} />)}
               </ul>

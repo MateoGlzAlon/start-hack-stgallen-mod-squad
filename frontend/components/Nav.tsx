@@ -11,7 +11,7 @@ const TABS = [
   { href: '/', label: 'Policies', Icon: Shield },
   { href: '/inbox', label: 'Inbox', Icon: Bell },
   { href: '/activity', label: 'Activity', Icon: List },
-  { href: '/try', label: 'Try', Icon: Play },
+  { href: '/demo', label: 'Demo', Icon: Play },
 ];
 
 function usePending() {

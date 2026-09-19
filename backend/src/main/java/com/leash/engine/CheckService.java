@@ -156,16 +156,56 @@ public class CheckService {
         List<Evidence> ev = new ArrayList<>();
         List<RuleEvaluator.Result> checks = new ArrayList<>();
         List<String> parts = new ArrayList<>();
-        for (Prepared p : all) {
+        List<Prepared> near = closest(all);
+        for (Prepared p : near) {
             Decision d = p.early();
             d.reasonCodes().stream().filter(c -> !codes.contains(c)).forEach(codes::add);
-            d.evidence().forEach(e -> ev.add(new Evidence(e.source(), "[" + d.policyId() + "] " + e.fact(), e.value(), e.note())));
+            ev.addAll(d.evidence());
             checks.addAll(d.checks());
-            parts.add("Policy " + d.policyId() + ": " + d.customerMessage().replaceFirst("^Declined: ", ""));
+            parts.add((near.size() > 1 || all.size() > 1 ? "Policy \u201c" + label(p.pv()) + "\u201d: " : "") + d.customerMessage().replaceFirst("^Declined: ", ""));
         }
-        String msg = "Declined: " + (all.size() == 1 ? "your active policy does not allow" : "none of your " + all.size() + " active policies allows")
-                + " this purchase. " + String.join(" ", parts);
+        if (all.size() > 1) ev.addAll(closestEvidence(all, near));
+        List<Evidence> uniqueEv = ev.stream().distinct().toList();
+        ev.clear();
+        ev.addAll(uniqueEv);
+        List<RuleEvaluator.Result> uniqueChecks = checks.stream().distinct().toList();
+        checks.clear();
+        checks.addAll(uniqueChecks);
+        String msg = "Declined: " + (all.size() == 1 ? "your active policy does not allow this purchase. "
+                : "none of your " + all.size() + " active policies allows this purchase. Closest: ") + String.join(" ", parts);
         return make(f, key, source, DENIED, codes, msg, ev, checks, false);
+    }
+
+    /** Only the rule results that failed; passes say nothing about why a purchase was refused. */
+    private static List<Evidence> failedOnly(List<Evidence> ev) {
+        return ev.stream().filter(e -> !"rule".equals(e.source()) || (e.note() != null && e.note().startsWith("fail:"))).toList();
+    }
+
+    private static List<RuleEvaluator.Result> failures(Prepared p) {
+        return p.checks().stream().filter(c -> RuleEvaluator.FAIL.equals(c.verdict())).toList();
+    }
+
+    /** The policies the purchase came closest to (fewest broken rules, at most two): the only ones worth explaining when nothing allows it. */
+    private static List<Prepared> closest(List<Prepared> cands) {
+        java.util.function.ToIntFunction<Prepared> broken = p -> p.early() != null && p.checks().isEmpty() ? Integer.MAX_VALUE : failures(p).size();
+        int min = cands.stream().mapToInt(broken).min().orElse(0);
+        return cands.stream().filter(p -> broken.applyAsInt(p) == min).limit(2).toList();
+    }
+
+    private static List<Evidence> closestEvidence(List<Prepared> all, List<Prepared> near) {
+        List<Evidence> out = new ArrayList<>();
+        int others = all.size() - near.size();
+        for (int i = 0; i < near.size(); i++) {
+            out.add(new Evidence("policy", "Closest policy", near.get(i).pv().id(),
+                    i == 0 && others > 0 ? others + " other " + (others == 1 ? "policy" : "policies") + " did not fit either" : null));
+        }
+        return out;
+    }
+
+    /** The customer's own first sentence, short. */
+    private static String label(PolicyView pv) {
+        String first = pv.instruction() == null ? "" : pv.instruction().split("(?<=[.!?])\\s")[0].trim();
+        return first.length() > 80 ? first.substring(0, 80).replaceAll("\\s+\\S*$", "") + "\u2026" : first;
     }
 
     /** One policy's deterministic verdict. {@code early} is set when the rules alone settled it (guard, failed rule, clean pass). */
@@ -212,7 +252,7 @@ public class CheckService {
             List<String> codes = new ArrayList<>(List.of("hard_rule_violated"));
             fails.forEach(c -> codes.add(codeOf(c.rule())));
             String msg = "Declined: " + String.join("; ", fails.stream().map(RuleEvaluator.Result::detail).toList()) + ".";
-            return settled(f, pv, key, source, DENIED, codes, msg, ev, checks);
+            return settled(f, pv, key, source, DENIED, codes, msg, failedOnly(ev), fails);
         }
 
         // Soft signals that a plain rule pass cannot vouch for.
@@ -355,11 +395,34 @@ public class CheckService {
 
         List<Evidence> ev = new ArrayList<>();
         List<RuleEvaluator.Result> checks = new ArrayList<>();
-        for (Prepared p : chosen != null ? List.of(chosen) : cands) {
-            addEvidence(ev, p, chosen == null && cands.size() > 1);
-            checks.addAll(p.checks());
+        if (DENIED.equals(state)) {
+            // refused: only why. The closest policy's broken rules and the reason the model gave for it, not every rule of every policy.
+            List<Prepared> near = chosen != null ? List.of(chosen) : closest(cands);
+            for (Prepared p : near) {
+                ev.addAll(failedOnly(p.ev()));
+                checks.addAll(failures(p));
+            }
+            for (LlmJudge.Assessment x : a.assessments()) {
+                if ("violated".equals(x.status()) && near.stream().anyMatch(p -> x.policyId().equals(p.pv().id()))) {
+                    ev.add(new Evidence("model", "Policy " + x.policyId() + " violated: " + x.reason(), null, null));
+                }
+            }
+            if (chosen == null && cands.size() > 1) ev.addAll(closestEvidence(cands, near));
+        } else {
+            for (Prepared p : chosen != null ? List.of(chosen) : cands) {
+                addEvidence(ev, p, chosen == null && cands.size() > 1);
+                checks.addAll(p.checks());
+            }
+            a.evidence().forEach(s -> ev.add(new Evidence("model", s, null, null)));
         }
-        a.evidence().forEach(s -> ev.add(new Evidence("model", s, null, null)));
+        if (DENIED.equals(state)) {
+            List<Evidence> uniqueEv = ev.stream().distinct().toList();
+            ev.clear();
+            ev.addAll(uniqueEv);
+            List<RuleEvaluator.Result> uniqueChecks = checks.stream().distinct().toList();
+            checks.clear();
+            checks.addAll(uniqueChecks);
+        }
         Decision d = make(f, key, source, state, codes, msg, ev, checks, true);
         return chosen != null ? d.withPolicy(chosen.pv().id()) : d;
     }

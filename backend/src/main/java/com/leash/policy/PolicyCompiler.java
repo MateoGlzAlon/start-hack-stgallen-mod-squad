@@ -130,8 +130,8 @@ public class PolicyCompiler {
                 - hard_rules: machine-checkable limits. Only use these fields (exact names):
                 %s
                   Operators: < <= = != > >= in not_in. "in"/"not_in" take a string or a list of strings; the others compare numbers.
-                  Amounts must be in CHF (convert other currencies to CHF at %s) and the field name must \
-                keep _chf. Use currency "CHF" for money rules. scope: "purchase" for a per-order limit; "period" with period_days for a \
+                  Keep every amount in the currency the customer used and put that currency in "currency" (CHF, EUR, GBP or USD). NEVER convert \
+                an amount yourself: the system converts it exactly (fixed rates to CHF: %s). The field name must keep _chf even for EUR, GBP or USD amounts. scope: "purchase" for a per-order limit; "period" with period_days for a \
                 rolling total across several days (e.g. per 7 days). Set unused optional keys (currency, scope, period_days) to null.
                   When the customer names the kind of goods ("groceries", "clothing", "electronics"), write an items.item_category rule so \
                 every line of the basket is checked (groceries -> items.item_category in ["groceries"]); when they name the kind of shop \

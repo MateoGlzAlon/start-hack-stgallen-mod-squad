@@ -114,7 +114,7 @@ curl -s -X POST http://localhost:8080/policies \
 
 | Becomes | |
 | --- | --- |
-| Rules | `billing_amount_chf <= 47.5` (EUR 50 at the fixed rate), `merchant.merchant_country = CH`, `items.item_category in ["transport"]` |
+| Rules | `billing_amount_chf <= 50` in EUR (the engine converts it: EUR 50 = CHF 47.50), `merchant.merchant_country = CH`, `items.item_category in ["transport"]` |
 | Guidance | Only train and public transport tickets from Swiss providers |
 | When unsure | ask |
 

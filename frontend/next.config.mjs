@@ -5,6 +5,9 @@ const backend = (process.env.BACKEND_URL || 'http://localhost:8080').replace(/\/
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  async redirects() {
+    return [{ source: '/try', destination: '/demo', permanent: false }]; // the old name of the Demo tab
+  },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${backend}/:path*` }];
   },

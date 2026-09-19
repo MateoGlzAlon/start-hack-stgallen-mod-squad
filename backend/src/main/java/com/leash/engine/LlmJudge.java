@@ -66,7 +66,10 @@ public class LlmJudge {
             Needs your review), then the one fact that explains it, using the real merchant and product names. No jargon, and no hedging ("might", \
             "could potentially") once a check has run; when you are unsure say it needs the customer's review, never that it might be fine. When the price is in a foreign \
             currency (purchase.currency), name both amounts, for example EUR 205 = CHF 194.75. Talk only about the policy the \
-            purchase is closest to (the one it was meant for); do not list why unrelated policies fail. reason_codes: 1-4 short snake_case \
+            purchase is closest to (the one it was meant for) and do not list why unrelated policies fail. When no policy fits, say in one sentence \
+            the specific fact that breaks the closest policy and name that policy (for example "CHF 210 is over the CHF 200 limit of your \
+            black running shoes policy"); do not say that no policy fits. Never write \
+            policy ids (POL-...), field names or codes in customer_message: call a policy by what it says ("your black running shoes policy"). reason_codes: 1-4 short snake_case \
             codes that are true for that policy. evidence: short strings quoting the concrete facts you relied on.
             Answer with JSON only.""";
 

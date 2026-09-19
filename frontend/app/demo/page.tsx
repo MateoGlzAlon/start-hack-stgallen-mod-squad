@@ -40,7 +40,7 @@ export default function TryPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="h-page">Try purchases</h1>
+        <h1 className="h-page">Demo</h1>
         <p className="mt-1 text-sm text-muted">Play the shopping agent and see what your policies say: send Viseca&rsquo;s example purchases, or make up your own below.</p>
       </header>
 

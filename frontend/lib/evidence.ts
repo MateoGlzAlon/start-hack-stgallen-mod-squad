@@ -19,7 +19,7 @@ export function policyName(p?: Policy): string | null {
 }
 
 // what decided the outcome first, the noise about unrelated policies last
-const ORDER: Record<string, number> = { Fits: 0, 'Unverified': 1, 'Shop text': 2, Price: 3, Seller: 4, 'Doesn’t fit': 5, You: 6 };
+const ORDER: Record<string, number> = { Policy: -0.5, Fits: 0, 'Unverified': 1, 'Shop text': 2, Price: 3, Seller: 4, 'Doesn’t fit': 5, You: 6 };
 
 export type Line = { tag: string; tone: 'ok' | 'no' | 'ask' | 'muted'; text: string; sub?: string };
 
@@ -37,6 +37,11 @@ export function describeEvidence(e: Evidence, nameOf: (id: string) => string | n
       return { tag, tone: m[2] === 'satisfied' ? 'ok' : m[2] === 'violated' ? 'no' : 'ask', text: who, sub: m[3] };
     }
     return { tag: 'AI', tone: 'muted', text: e.fact };
+  }
+
+  if (e.source === 'policy') {
+    const name = nameOf(value);
+    return { tag: 'Policy', tone: 'muted', text: name ? `The closest of your policies: \u201c${name}\u201d` : 'The closest of your policies', sub: note ? note.charAt(0).toUpperCase() + note.slice(1) + '.' : undefined };
   }
 
   if (e.source === 'customer') {
@@ -92,6 +97,7 @@ export function explainCheck(c: Check): string {
   switch (f) {
     case 'billing_amount_chf':
       if (c.rule.scope === 'period') return actual;
+      if (!ok && up && typeof c.rule.value === 'number') return `${money(Number(actual))} is over the limit by ${money(Number(actual) - c.rule.value)}.`;
       return `${money(Number(actual))} ${ok ? (up ? 'is within the limit' : 'meets the minimum') : up ? 'is over the limit' : 'is below the minimum'}.`;
     case 'merchant.familiar':
       return actual === 'true' ? 'You have bought here before.' : 'You haven’t bought here before.';

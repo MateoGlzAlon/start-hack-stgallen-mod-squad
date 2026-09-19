@@ -47,7 +47,7 @@ export default function ActivityPage() {
 
       {err && <p className="note-no">{err}</p>}
       {items === null && !err && <p className="text-sm text-muted">Loading…</p>}
-      {items !== null && shown.length === 0 && <div className="card p-8 text-center text-sm text-muted">Nothing here yet. Try a purchase first.</div>}
+      {items !== null && shown.length === 0 && <div className="card p-8 text-center text-sm text-muted">Nothing here yet. Run the Demo first.</div>}
 
       <ul className="space-y-2">
         {shown.map((d) => {

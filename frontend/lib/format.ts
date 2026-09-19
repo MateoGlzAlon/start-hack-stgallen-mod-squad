@@ -64,4 +64,8 @@ export const stripVerdict = (msg: string) => {
   const m = voice(msg).replace(/^(Approved|Blocked|Needs your review)\s*[:.,\u2014-]\s*/i, '');
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
-export const voice = (msg: string) => msg.replace(/^Declined[:,]?\s+/i, 'Blocked \u2014 ');
+export const voice = (msg: string) =>
+  msg
+    .replace(/\s*\(POL-[A-Za-z0-9]+\)/g, '') // a policy id must never reach the customer
+    .replace(/POL-[A-Za-z0-9]+/g, 'one of your policies')
+    .replace(/^Declined[:,]?\s+/i, 'Blocked \u2014 ');

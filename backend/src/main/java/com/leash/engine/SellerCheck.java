@@ -134,7 +134,10 @@ public class SellerCheck {
         if (r == null) return d;
         List<Evidence> ev = new ArrayList<>(d.evidence());
         ev.addAll(r.evidence());
-        if (!"alert".equals(r.level())) return d.with(d.state(), d.reasonCodes(), d.customerMessage(), ev);
+        if (!"alert".equals(r.level())) {
+            // a refusal is explained by what broke, not by how well the seller is known (only a lookalike matters there)
+            return Decision.DENIED.equals(d.state()) ? d : d.with(d.state(), d.reasonCodes(), d.customerMessage(), ev);
+        }
         if (Decision.APPROVED.equals(d.state())) {
             return d.with(Decision.PENDING, List.of("lookalike_seller", "customer_confirmation"), r.message(), ev);
         }
