@@ -40,6 +40,26 @@ export type Decision = {
   billing_amount_chf: number;
 };
 
+export type Scenario = {
+  scenario_id: string;
+  scenario_name: string;
+  cardholder_instruction: string;
+  event_count: number;
+  control_theme?: string;
+  control_question?: string;
+  short_rationale?: string;
+};
+
+export type Run = {
+  run_id: string;
+  status: string; // running | completed
+  scenario: Pick<Scenario, 'scenario_id' | 'scenario_name' | 'cardholder_instruction' | 'event_count'>;
+  counters: { total_events: number; generated: number; remaining: number; pending: number; awaiting_customer: number; approved: number; declined: number; timed_out: number; cancelled: number };
+  started_at?: string;
+  completed_at?: string | null;
+};
+export type RunView = { run: Run; decisions: Decision[] };
+
 export type Status = {
   openai: { configured: boolean; model: string };
   viseca: { configured: boolean; worker_running: boolean };
@@ -75,6 +95,10 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ hard_rules: p.hard_rules, uncertainty_policy: 'decline', guidance: p.guidance, open_questions: p.open_questions }),
     }),
+  scenarios: () => req<{ source: string; scenarios: Scenario[] }>('/scenarios'),
+  startRun: (policy_id: string, scenario_id: string) =>
+    req<{ policy_id: string; mandate_id: string; run: Run }>('/runs', { method: 'POST', body: JSON.stringify({ policy_id, scenario_id }) }),
+  run: (id: string) => req<RunView>(`/runs/${encodeURIComponent(id)}`),
   check: (event: unknown) => req<Decision>('/check', { method: 'POST', body: JSON.stringify(event) }),
   decisions: (state?: State) => req<Decision[]>(`/decisions${state ? `?state=${state}` : ''}`),
   resolve: (id: string, decision: 'approve' | 'decline') =>

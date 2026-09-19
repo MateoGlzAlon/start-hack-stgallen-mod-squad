@@ -29,3 +29,6 @@ export const Question = (p: SVGProps<SVGSVGElement>) => (
 export const Chevron = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M9 6l6 6-6 6" /></svg>
 );
+export const Flag = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M5 21V4" /><path d="M5 4h12l-2 4 2 4H5" /></svg>
+);

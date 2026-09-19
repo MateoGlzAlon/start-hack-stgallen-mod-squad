@@ -19,7 +19,11 @@ export default function PoliciesPage() {
   const [fresh, setFresh] = useState<string | null>(null);
 
   const load = useCallback(() => api.policies().then(setPolicies).catch((e) => setErr(e.message)), []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    window.addEventListener('leash:policies-changed', load);
+    return () => window.removeEventListener('leash:policies-changed', load);
+  }, [load]);
 
   async function create() {
     if (!text.trim() || creating) return;

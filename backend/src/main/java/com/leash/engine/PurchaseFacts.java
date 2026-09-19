@@ -63,6 +63,7 @@ public record PurchaseFacts(
         } else if (claimed != null) chf = claimed;
         else if (derived != null) chf = derived;
         else bad.add("authorization.billing_amount_chf (or amount with a currency that has an exchange rate: " + String.join(", ", Fx.rates().keySet()) + ")");
+        if (chf != null) chf = chf.setScale(2, RoundingMode.HALF_UP);   // cents, never 3.1E+2
         String priceNote = price != null && chf != null && Fx.rate(currency) != null && !"CHF".equals(currency)
                 ? currency + " " + price.setScale(2, RoundingMode.HALF_UP).toPlainString() + " = CHF " + chf.setScale(2, RoundingMode.HALF_UP).toPlainString()
                         + " (fixed rate " + Fx.rate(currency).toPlainString() + ")"

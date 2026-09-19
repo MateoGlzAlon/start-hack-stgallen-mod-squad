@@ -12,14 +12,19 @@ The same flow works in the UI (Try presets, Inbox, Policies). These curls are fo
 
 ## 0. Setup
 
-Start the system, with **only this policy active** (the answers below depend on that; `make deprovision` clears any others):
+Start the system:
 
 ```bash
 make provision
 ```
 
+The answers below depend on **this policy being the only active one**, so first revoke any others (an older or example policy would allow purchases this one asks about), then create it:
+
 ```bash
 API=http://localhost:8080
+
+# revoke every active policy left over from earlier
+for id in $(curl -s $API/policies | jq -r '.[] | select(.status == "active") | .id'); do curl -s -X DELETE $API/policies/$id >/dev/null; done
 
 # say it in your own words; the policy is active immediately
 POLICY=$(curl -s -X POST $API/policies -H 'Content-Type: application/json' \
@@ -28,7 +33,7 @@ POLICY=$(curl -s -X POST $API/policies -H 'Content-Type: application/json' \
 
 It prints what was understood: the limit becomes an exact rule (`billing_amount_chf <= 200`), "only if I can return them" becomes another (`order_returnable = true`), "only black running shoes" becomes guidance for the AI, and "when unsure" is `ask`. Keep the shell open: the next steps use `$API` and `$POLICY`.
 
-Every purchase needs its own `authorization_id`, because the same id returns the saved decision. If you run the demo twice, change the ids (or `make restart s=backend` to clear the saved decisions).
+Every purchase needs its own `authorization_id`, because the same id returns the saved decision, even after you change the policy. If you run the demo twice, change the ids (or `make restart s=backend` to clear the saved decisions).
 
 ---
 
