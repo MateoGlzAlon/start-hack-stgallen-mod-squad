@@ -62,7 +62,7 @@ Not covered: a history-based decline rate per shop (the data dictionary says his
 | What | How |
 | --- | --- |
 | The customer's sentence becomes explicit permissions | `POST /policies` sends the sentence to the model, which returns rules, guidance, an `uncertainty_policy` and open questions in Viseca's mandate shape. The customer's words are kept verbatim. The compiler is forbidden to invent ids or values, so what can't be a rule becomes guidance. |
-| Show what was understood | The created policy lists its rules, guidance and "when unsure". The customer can tighten it (`PATCH`) or revoke it (`DELETE`) at any time. (The UI for this is not built yet; the API is.) |
+| Show what was understood | The created policy lists its rules, guidance and "when unsure". The customer can tighten it (`PATCH`) or revoke it (`DELETE`) at any time. (The `frontend/` shows this on the Policies screen: rules checked exactly, guidance judged by AI, "when unsure", with tighten and revoke buttons.) |
 | What can't be a rule is still enforced | Colour, size, product type and return window become **guidance**. The judge checks each policy separately (satisfied / violated / unverified) against **every line** of the basket, so "black running shoes" is violated by white shoes, a coffee machine or a gift card in the cart. |
 | Item rules apply to every cart line | `items.item_category` and `items.quantity` rules must hold for each line, so one forbidden item declines the whole order. Gift cards, memberships and cosmetics exist only as item categories in the data and are caught this way. |
 | Several policies at once | With no policy named, all active policies and the purchase go to the model in one call. Any policy that is satisfied approves, and the message says which one. |
@@ -133,7 +133,7 @@ Viseca gives 8 seconds from queueing. Ordinary purchases are decided by rules al
 
 ## Known gaps
 
-- **The UI is not built.** The API is complete, but the customer-facing screens (what was understood, confirm / tighten / revoke, the step-up inbox) don't exist yet.
+- **The UI is minimal.** `frontend/` has the four essential screens (policies with tighten / revoke, try a purchase, step-up inbox, activity with evidence), but no live push (it polls), no login, and no in-app editing of individual rules.
 - **Nothing has been run against the real Viseca API**, only a mock, so their `evidence` format is unverified.
 - **Decisions and spend are in memory** and lost on restart. Policies survive in `store/policies.json`.
 - **The tripwire and guidance-only requirements** are the weak points of requirement 4, as above.

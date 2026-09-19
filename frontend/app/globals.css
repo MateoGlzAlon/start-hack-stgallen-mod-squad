@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens as rgb triplets (see tailwind.config.ts). Light by default, dark follows the system. */
+:root {
+  --bg: 246 247 249;
+  --card: 255 255 255;
+  --fg: 15 23 42;
+  --muted: 100 116 139;
+  --line: 226 230 236;
+  --accent: 79 70 229;
+  --ok: 22 163 74;
+  --ask: 202 138 4;
+  --no: 220 38 38;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 10 12 17;
+    --card: 20 23 31;
+    --fg: 231 233 239;
+    --muted: 145 153 171;
+    --line: 38 43 56;
+    --accent: 129 140 248;
+    --ok: 74 222 128;
+    --ask: 250 204 21;
+    --no: 248 113 113;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-bg text-fg antialiased;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-line bg-card; }
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply btn bg-accent text-white hover:opacity-90 active:opacity-80; }
+  .btn-ghost { @apply btn border border-line bg-card text-fg hover:bg-fg/5; }
+  .btn-ok { @apply btn bg-ok/15 text-ok hover:bg-ok/25; }
+  .btn-no { @apply btn bg-no/15 text-no hover:bg-no/25; }
+  .field {
+    @apply w-full rounded-xl border border-line bg-card px-3 py-2.5 text-base text-fg placeholder:text-muted/70
+      focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 md:text-sm;
+  }
+  .label { @apply mb-1 block text-xs font-medium text-muted; }
+  .chip { @apply inline-flex items-center rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-muted; }
+}

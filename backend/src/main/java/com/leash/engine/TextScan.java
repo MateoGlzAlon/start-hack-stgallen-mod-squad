@@ -33,7 +33,11 @@ public final class TextScan {
             for (Pattern p : PATTERNS) {
                 Matcher m = p.matcher(t);
                 if (m.find()) {
+                    if (t.length() <= 200) { hits.add(t.trim()); break; }
                     int from = Math.max(0, m.start() - 20), to = Math.min(t.length(), m.end() + 40);
+                    // widen to whole words so the quote never starts or ends mid-word
+                    while (from > 0 && !Character.isWhitespace(t.charAt(from - 1))) from--;
+                    while (to < t.length() && !Character.isWhitespace(t.charAt(to))) to++;
                     hits.add(t.substring(from, to).trim());
                     break;
                 }

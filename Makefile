@@ -29,7 +29,7 @@ build: env ## Build the Docker images (backend, plus the UI once it exists) with
 	$(DC) build
 
 provision: env ## Build and start the system (backend, plus the UI once it exists)
-	docker compose up -d --wait
+	$(DC) up -d --build --wait
 	@echo ""
 	@echo "  API  http://localhost:$(BACKEND_PORT)/status"
 	@echo "  Docs http://localhost:$(BACKEND_PORT)/swagger-ui.html"
@@ -38,15 +38,16 @@ provision: env ## Build and start the system (backend, plus the UI once it exist
 provision_local: env ## Like provision, but a local model in a container (Ollama) replaces the OpenAI API: make provision_local LOCAL_MODEL=qwen2.5:14b
 	docker compose --profile local up -d --wait ollama
 	docker compose --profile local exec ollama ollama pull $(LOCAL_MODEL)
-	$(LOCAL_ENV) docker compose --profile local up -d --build --wait backend
+	$(LOCAL_ENV) $(DC) --profile local up -d --build --wait backend $(if $(wildcard frontend/Dockerfile),frontend)
 	@echo ""
 	@echo "  Model $(LOCAL_MODEL), served by the leash-ollama container (no OpenAI calls)"
 	@echo "  API  http://localhost:$(BACKEND_PORT)/status"
 	@echo "  Docs http://localhost:$(BACKEND_PORT)/swagger-ui.html"
+	@test ! -f frontend/Dockerfile || echo "  UI   http://localhost:$(FRONTEND_PORT)"
 	@echo "  Note: make restart s=backend goes back to the OpenAI settings of .env; run make provision_local again to restart in local mode"
 
 deprovision: ## Stop the system and delete its volumes (saved policies and downloaded local models included)
-	docker compose --profile local down -v
+	$(DC) --profile local down -v
 
 restart: ## Rebuild and restart one service: make restart s=backend
 	docker compose up -d --build --no-deps $(s)
