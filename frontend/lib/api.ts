@@ -99,7 +99,14 @@ export const api = {
   startRun: (policy_id: string, scenario_id: string) =>
     req<{ policy_id: string; mandate_id: string; run: Run }>('/runs', { method: 'POST', body: JSON.stringify({ policy_id, scenario_id }) }),
   run: (id: string) => req<RunView>(`/runs/${encodeURIComponent(id)}`),
-  check: (event: unknown) => req<Decision>('/check', { method: 'POST', body: JSON.stringify(event) }),
+  // example purchase attempts (Viseca event format) from the data pack
+  attempts: (scenarioId: string) => req<{ source: string; attempts: { authorization: Record<string, any> }[] }>(`/purchase-attempts?scenario_id=${encodeURIComponent(scenarioId)}`),
+  check: (event: unknown, opts?: { policyId?: string; runId?: string }) => {
+    const q = new URLSearchParams();
+    if (opts?.policyId) q.set('policy_id', opts.policyId);
+    if (opts?.runId) q.set('run_id', opts.runId);
+    return req<Decision>(`/check${q.size ? `?${q}` : ''}`, { method: 'POST', body: JSON.stringify(event) });
+  },
   decisions: (state?: State) => req<Decision[]>(`/decisions${state ? `?state=${state}` : ''}`),
   resolve: (id: string, decision: 'approve' | 'decline') =>
     req<Decision>(`/check/${encodeURIComponent(id)}/resolve`, {

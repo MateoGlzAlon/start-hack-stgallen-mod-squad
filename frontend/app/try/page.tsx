@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api, type Decision } from '@/lib/api';
 import DecisionCard from '@/components/DecisionCard';
+import TestPurchases from '@/components/TestPurchases';
 import { EMPTY, ITEM_CATEGORIES, PRESETS, SHOP_TYPES, buildEvent, type PurchaseForm } from '@/lib/purchase';
 
 const nice = (s: string) => (s ? s.replace(/_/g, ' ') : 'same as the shop type');
@@ -38,9 +39,16 @@ export default function TryPage() {
 
   return (
     <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Try purchases</h1>
+        <p className="mt-1 text-sm text-muted">Play the shopping agent and see what your policies say: send Viseca&rsquo;s example purchases, or make up your own below.</p>
+      </header>
+
+      <TestPurchases />
+
       <section>
-        <h1 className="text-2xl font-semibold tracking-tight">Try a purchase</h1>
-        <p className="mt-1 text-sm text-muted">Play the shopping agent: propose a purchase and see what your policies say. The presets assume the example policies.</p>
+        <h2 className="text-lg font-semibold">Or make up one purchase</h2>
+        <p className="mt-1 text-sm text-muted">The presets assume the example policies.</p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {PRESETS.map((p) => (
